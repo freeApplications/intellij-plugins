@@ -1,0 +1,31 @@
+<idea-plugin>
+    <id>io.github.freeApplications.intellij-plugins</id>
+    <name>PHP Array Converter</name>
+    <vendor url="https://github.com/freeApplications">freeApplications</vendor>
+
+    <description><![CDATA[
+      <h3>PHP Array Converter</h3>
+      <p>Replaces selected JSON text with PHP Array.</p>
+    ]]></description>
+
+    <!-- please see https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html
+         on how to target different products -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <!-- Minimum and maximum build of IDE compatible with the plugin -->
+    <idea-version since-build="211"/>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Add your extensions here -->
+    </extensions>
+
+    <actions>
+        <!-- Add your actions here -->
+        <action id="jp.freeapps.intellij.plugin.phparray.action.JsonToPhpArrayAction"
+                class="jp.freeapps.intellij.plugin.phparray.action.JsonToPhpArrayAction"
+                text="JSON to PHP Array"
+                description="Replaces selected JSON text with PHP Array.">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>

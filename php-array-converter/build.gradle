@@ -27,7 +27,8 @@ intellij {
 
 patchPluginXml {
     changeNotes = """
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>
+      <ul>
+        <li>v0.1.0 : ➕ JSON to PHP Array</li>
+      </ul>
     """
 }

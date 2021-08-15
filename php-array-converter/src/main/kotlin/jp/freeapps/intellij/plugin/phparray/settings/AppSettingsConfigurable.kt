@@ -27,18 +27,21 @@ class AppSettingsConfigurable : Configurable {
         val settings = AppSettingsState.getInstance()
         return settingsComponent!!.useBraket != settings.useBraket
                 || settingsComponent!!.useDoubleQuote != settings.useDoubleQuote
+                || settingsComponent!!.appendComma != settings.appendComma
     }
 
     override fun apply() {
         val settings = AppSettingsState.getInstance()
         settings.useBraket = settingsComponent!!.useBraket
         settings.useDoubleQuote = settingsComponent!!.useDoubleQuote
+        settings.appendComma = settingsComponent!!.appendComma
     }
 
     override fun reset() {
         val settings = AppSettingsState.getInstance()
         settingsComponent!!.useBraket = settings.useBraket
         settingsComponent!!.useDoubleQuote = settings.useDoubleQuote
+        settingsComponent!!.appendComma = settings.appendComma
     }
 
     override fun disposeUIResources() {

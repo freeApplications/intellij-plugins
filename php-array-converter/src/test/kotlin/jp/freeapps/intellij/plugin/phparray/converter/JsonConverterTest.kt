@@ -145,4 +145,60 @@ array(array(	"\t"	 =>
         appSettingsState.useBraket = false
         assertEquals(expectedUseDoubleQuote, JsonConverter(json).toPhpArray())
     }
+
+    @Test
+    fun testAppendComma() {
+        val json = """
+[
+  {
+    "key": "value"
+  },
+  [
+    "element"
+  ],
+  {}, [],
+  {
+    "key1": {
+      "key": 123
+    },
+    "key2": {
+      "key": [ 456, 789 ]
+    },
+    "key3": {
+      "key": { "key": "value" }
+    }
+  }
+]
+"""
+        val expected = """
+array(
+  array(
+    'key' => 'value',
+  ),
+  array(
+    'element',
+  ),
+  array(), array(),
+  array(
+    'key1' => array(
+      'key' => 123,
+    ),
+    'key2' => array(
+      'key' => array( 456, 789, ),
+    ),
+    'key3' => array(
+      'key' => array( 'key' => 'value', ),
+    ),
+  ),
+)
+"""
+        // Mocking AppSettingsState
+        val appSettingsState = AppSettingsState()
+        mockkObject(AppSettingsState)
+        every { AppSettingsState.getInstance() } returns appSettingsState
+
+        // appendComma
+        appSettingsState.appendComma = true
+        assertEquals(expected, JsonConverter(json).toPhpArray())
+    }
 }

@@ -17,6 +17,7 @@ class JsonConverter(json: String) {
     private val arrow = " => "
     private val singleQuote = "'"
     private val doubleQuote = "\""
+    private val comma = ","
 
     // variables
     private var jsonString: String = json
@@ -24,6 +25,7 @@ class JsonConverter(json: String) {
     private var currentIndex: Int = 0
     private var useBraket = false
     private var useDoubleQuote = false
+    private var appendComma = false
 
     init {
         val mapper = ObjectMapper()
@@ -35,10 +37,11 @@ class JsonConverter(json: String) {
         val settings = AppSettingsState.getInstance()
         useBraket = settings.useBraket
         useDoubleQuote = settings.useDoubleQuote
+        appendComma = settings.appendComma
     }
 
     fun isValid(): Boolean {
-        return jsonObject != null
+        return jsonObject != null && (jsonObject is List<*> || jsonObject is Map<*, *>)
     }
 
     fun toPhpArray(): String {
@@ -76,7 +79,15 @@ class JsonConverter(json: String) {
         list.forEach { item ->
             builder.append(this.toPhpArray(item as Any, hierarchy + 1))
         }
-        if (hierarchy == 0) {
+        if (appendComma) {
+            if (list.isNotEmpty()) {
+                builder.append(comma)
+            }
+            val positionIndex = jsonString.indexOf(closeBraket, currentIndex) + closeBraket.length
+            builder.append(replaceSyntax(positionIndex))
+            currentIndex = positionIndex
+        }
+        if (hierarchy == 0 && currentIndex < jsonString.length) {
             builder.append(replaceSyntax(jsonString.length))
         }
         return builder.toString()
@@ -89,7 +100,15 @@ class JsonConverter(json: String) {
                 .append(this.toPhpArray(item.key as Any))
                 .append(this.toPhpArray(item.value as Any, hierarchy + 1))
         }
-        if (hierarchy == 0) {
+        if (appendComma) {
+            if (map.isNotEmpty()) {
+                builder.append(comma)
+            }
+            val positionIndex = jsonString.indexOf(closeBrace, currentIndex) + closeBrace.length
+            builder.append(replaceSyntax(positionIndex))
+            currentIndex = positionIndex
+        }
+        if (hierarchy == 0 && currentIndex < jsonString.length) {
             builder.append(replaceSyntax(jsonString.length))
         }
         return builder.toString()

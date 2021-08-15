@@ -1,5 +1,6 @@
 package jp.freeapps.intellij.plugin.phparray.settings
 
+import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBRadioButton
 import com.intellij.util.ui.JBUI
@@ -34,6 +35,9 @@ class AppSettingsComponent : JPanel(GridBagLayout()) {
     private val useDoubleQuoteOption = JBRadioButton("Double quotes")
     private val stringQuotationMarks: Array<JBRadioButton> = arrayOf(useSingleQuoteOption, useDoubleQuoteOption)
 
+    // Add comma to last element
+    private val appendCommaOption = JBCheckBox("Add comma to last element")
+
     val preferredFocusedComponent: JComponent
         get() = useArrayOption
 
@@ -51,6 +55,12 @@ class AppSettingsComponent : JPanel(GridBagLayout()) {
             useSingleQuoteOption.isSelected = !newStatus
         }
 
+    var appendComma: Boolean
+        get() = appendCommaOption.isSelected
+        set(newStatus) {
+            appendCommaOption.isSelected = newStatus
+        }
+
     init {
         // JSON to PHP Array Settings
         addTitle("JSON to PHP Array")
@@ -58,6 +68,7 @@ class AppSettingsComponent : JPanel(GridBagLayout()) {
             mapOf(
                 "PHP Array syntax : " to arraySyntax,
                 "String quotation marks : " to stringQuotationMarks,
+                "Add comma to last element : " to arrayOf(appendCommaOption),
             )
         )
         groupingRadioButtons(arraySyntax)
@@ -85,21 +96,29 @@ class AppSettingsComponent : JPanel(GridBagLayout()) {
         this.add(titlePanel, constraints)
     }
 
-    private fun <T : JComponent> addOptions(options: Map<String, Array<T>>) {
+    private fun addOptions(options: Map<String, Array<out JComponent>>) {
+        fun showLabel(items: Array<out JComponent>): Boolean {
+            return items.size > 1 || items[0] !is JBCheckBox
+        }
+
         val optionsPanel = JPanel(GridBagLayout())
         val maxColumns = options.values.fold(0) { accumulator, items ->
-            if (items.size > accumulator) items.size else accumulator
-        } + 1
+            (if (items.size > accumulator) items.size else accumulator) + (if (showLabel(items)) 1 else 0)
+        }
 
         var rowCount = 0
         options.forEach { (label, items) ->
+            var columnCount = 0
             var insets = JBUI.insets(0, 0, bottomInset, rightInset)
             var constraints = GridBagConstraints(0, rowCount, 1, 1, 0.0, 0.0, WEST, NONE, insets, 0, 0)
-            optionsPanel.add(JBLabel(label), constraints)
+            if (showLabel(items)) {
+                optionsPanel.add(JBLabel(label), constraints)
+                columnCount++
+            }
             items.forEachIndexed { index, item ->
-                constraints = GridBagConstraints(index + 1, rowCount, 1, 1, 0.0, 0.0, WEST, NONE, insets, 0, 0)
+                constraints = GridBagConstraints(columnCount++, rowCount, 1, 1, 0.0, 0.0, WEST, NONE, insets, 0, 0)
                 if (index + 1 == items.size) {
-                    constraints.gridwidth = maxColumns - items.size
+                    constraints.gridwidth = maxColumns - columnCount + 1
                     constraints.weightx = 1.0
                     constraints.fill = HORIZONTAL
                     insets = JBUI.insets(0, 0, bottomInset, 0)

@@ -18,6 +18,7 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 class AppSettingsState : PersistentStateComponent<AppSettingsState?> {
     var useBraket = false
     var useDoubleQuote = false
+    var appendComma = false
 
     override fun getState(): AppSettingsState {
         return this

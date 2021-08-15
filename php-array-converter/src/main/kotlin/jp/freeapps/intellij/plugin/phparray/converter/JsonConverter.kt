@@ -3,6 +3,7 @@ package jp.freeapps.intellij.plugin.phparray.converter
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
+import jp.freeapps.intellij.plugin.phparray.settings.AppSettingsState
 
 class JsonConverter(json: String) {
     // constants
@@ -31,20 +32,13 @@ class JsonConverter(json: String) {
         } catch (jsonProcessingException: JsonProcessingException) {
             // invalid json string.
         }
+        val settings = AppSettingsState.getInstance()
+        useBraket = settings.useBraket
+        useDoubleQuote = settings.useDoubleQuote
     }
 
     fun isValid(): Boolean {
-        return jsonObject != null && (jsonObject is List<*> || jsonObject is Map<*, *>)
-    }
-
-    fun setUseBraket(useBraket: Boolean): JsonConverter {
-        this.useBraket = useBraket
-        return this
-    }
-
-    fun setUseDoubleQuote(useDoubleQuote: Boolean): JsonConverter {
-        this.useDoubleQuote = useDoubleQuote
-        return this
+        return jsonObject != null
     }
 
     fun toPhpArray(): String {

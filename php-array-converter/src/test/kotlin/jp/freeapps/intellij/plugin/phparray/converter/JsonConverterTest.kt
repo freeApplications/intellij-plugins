@@ -1,5 +1,8 @@
 package jp.freeapps.intellij.plugin.phparray.converter
 
+import io.mockk.every
+import io.mockk.mockkObject
+import jp.freeapps.intellij.plugin.phparray.settings.AppSettingsState
 import org.junit.Test
 import kotlin.test.assertEquals
 
@@ -41,22 +44,25 @@ array(
       [   [   "key"   =>   "value"   ]   ]
 ]
 """
-        assertEquals(
-            expectedDefault,
-            JsonConverter(json).toPhpArray()
-        )
-        assertEquals(
-            expectedUseBraket,
-            JsonConverter(json).setUseBraket(true).toPhpArray()
-        )
-        assertEquals(
-            expectedUseDoubleQuote,
-            JsonConverter(json).setUseDoubleQuote(true).toPhpArray()
-        )
-        assertEquals(
-            expectedUseBraketAndDoubleQuote,
-            JsonConverter(json).setUseBraket(true).setUseDoubleQuote(true).toPhpArray()
-        )
+        // Mocking AppSettingsState
+        val appSettingsState = AppSettingsState()
+        mockkObject(AppSettingsState)
+        every { AppSettingsState.getInstance() } returns appSettingsState
+
+        // useArray | useSingleQuote
+        assertEquals(expectedDefault, JsonConverter(json).toPhpArray())
+
+        // useBraket | useSingleQuote
+        appSettingsState.useBraket = true
+        assertEquals(expectedUseBraket, JsonConverter(json).toPhpArray())
+
+        // useBraket | useDoubleQuote
+        appSettingsState.useDoubleQuote = true
+        assertEquals(expectedUseBraketAndDoubleQuote, JsonConverter(json).toPhpArray())
+
+        // useArray | useDoubleQuote
+        appSettingsState.useBraket = false
+        assertEquals(expectedUseDoubleQuote, JsonConverter(json).toPhpArray())
     }
 
     @Test
@@ -76,22 +82,25 @@ array(array("[{" => ":"),array(array("},[{" => " : ",	"\",\t\"" => "")))
         val expectedUseBraketAndDoubleQuote = """
 [["[{" => ":"],[["},[{" => " : ",	"\",\t\"" => ""]]]
 """
-        assertEquals(
-            expectedDefault,
-            JsonConverter(json).toPhpArray()
-        )
-        assertEquals(
-            expectedUseBraket,
-            JsonConverter(json).setUseBraket(true).toPhpArray()
-        )
-        assertEquals(
-            expectedUseDoubleQuote,
-            JsonConverter(json).setUseDoubleQuote(true).toPhpArray()
-        )
-        assertEquals(
-            expectedUseBraketAndDoubleQuote,
-            JsonConverter(json).setUseBraket(true).setUseDoubleQuote(true).toPhpArray()
-        )
+        // Mocking AppSettingsState
+        val appSettingsState = AppSettingsState()
+        mockkObject(AppSettingsState)
+        every { AppSettingsState.getInstance() } returns appSettingsState
+
+        // useArray | useSingleQuote
+        assertEquals(expectedDefault, JsonConverter(json).toPhpArray())
+
+        // useBraket | useSingleQuote
+        appSettingsState.useBraket = true
+        assertEquals(expectedUseBraket, JsonConverter(json).toPhpArray())
+
+        // useBraket | useDoubleQuote
+        appSettingsState.useDoubleQuote = true
+        assertEquals(expectedUseBraketAndDoubleQuote, JsonConverter(json).toPhpArray())
+
+        // useArray | useDoubleQuote
+        appSettingsState.useBraket = false
+        assertEquals(expectedUseDoubleQuote, JsonConverter(json).toPhpArray())
     }
 
     @Test
@@ -116,21 +125,24 @@ array(array(	"\t"	 =>
 [[	"\t"	 => 	
 "\t:\t\n","\"'\\'\"" =>    "    "]]
 """
-        assertEquals(
-            expectedDefault,
-            JsonConverter(json).toPhpArray()
-        )
-        assertEquals(
-            expectedUseBraket,
-            JsonConverter(json).setUseBraket(true).toPhpArray()
-        )
-        assertEquals(
-            expectedUseDoubleQuote,
-            JsonConverter(json).setUseDoubleQuote(true).toPhpArray()
-        )
-        assertEquals(
-            expectedUseBraketAndDoubleQuote,
-            JsonConverter(json).setUseBraket(true).setUseDoubleQuote(true).toPhpArray()
-        )
+        // Mocking AppSettingsState
+        val appSettingsState = AppSettingsState()
+        mockkObject(AppSettingsState)
+        every { AppSettingsState.getInstance() } returns appSettingsState
+
+        // useArray | useSingleQuote
+        assertEquals(expectedDefault, JsonConverter(json).toPhpArray())
+
+        // useBraket | useSingleQuote
+        appSettingsState.useBraket = true
+        assertEquals(expectedUseBraket, JsonConverter(json).toPhpArray())
+
+        // useBraket | useDoubleQuote
+        appSettingsState.useDoubleQuote = true
+        assertEquals(expectedUseBraketAndDoubleQuote, JsonConverter(json).toPhpArray())
+
+        // useArray | useDoubleQuote
+        appSettingsState.useBraket = false
+        assertEquals(expectedUseDoubleQuote, JsonConverter(json).toPhpArray())
     }
 }

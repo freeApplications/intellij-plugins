@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'io.github.freeApplications'
-version '0.1.0'
+version '0.2.0'
 
 sourceCompatibility = 11
 
@@ -17,6 +17,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.5.21'
     testImplementation 'org.jetbrains.kotlin:kotlin-test:1.5.21'
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit:1.5.21'
+    testImplementation 'io.mockk:mockk:1.12.0'
 }
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
@@ -28,6 +29,7 @@ intellij {
 patchPluginXml {
     changeNotes = """
       <ul>
+        <li>v0.2.0 : ➕ Settings</li>
         <li>v0.1.0 : ➕ JSON to PHP Array</li>
       </ul>
     """

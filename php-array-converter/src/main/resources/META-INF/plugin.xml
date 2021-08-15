@@ -17,6 +17,11 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- Add your extensions here -->
+        <applicationConfigurable parentId="tools"
+                                 instance="jp.freeapps.intellij.plugin.phparray.settings.AppSettingsConfigurable"
+                                 id="jp.freeapps.intellij.plugin.phparray.settings.AppSettingsConfigurable"
+                                 displayName="PHP Array Converter"/>
+        <applicationService serviceImplementation="jp.freeapps.intellij.plugin.phparray.settings.AppSettingsState"/>
     </extensions>
 
     <actions>

@@ -1,5 +1,9 @@
 package jp.freeapps.intellij.plugin.phparray.action
 
+import com.intellij.json.JsonLanguage
+import com.intellij.json.psi.JsonFile
+import com.intellij.lang.Language
+import com.intellij.psi.PsiFile
 import jp.freeapps.intellij.plugin.phparray.converter.JsonConverter
 
 /**
@@ -9,18 +13,25 @@ import jp.freeapps.intellij.plugin.phparray.converter.JsonConverter
  */
 class JsonToPhpArrayAction : BaseAction() {
     /**
-     * Replace the selected text with php array string.
+     * @inheritDoc
      */
-    override fun replaceSelectedText(selectedText: String): String {
-        val jsonConverter = JsonConverter(selectedText)
-        return jsonConverter.toPhpArray()
+    override fun getLanguage(): Language {
+        return JsonLanguage.INSTANCE
     }
 
     /**
-     * Determine if the selected text is a valid json string.
+     * Replace the selected text with php array string.
      */
-    override fun isValid(selectedText: String): Boolean {
-        val jsonConverter = JsonConverter(selectedText)
-        return jsonConverter.isValid()
+    override fun replaceSelectedText(psiFile: PsiFile): String {
+        if (psiFile !is JsonFile) return psiFile.text
+        return JsonConverter(psiFile).toPhpArray()
+    }
+
+    /**
+     * Determine if the selected text is a psi file of valid replaceable json text.
+     */
+    override fun isValid(psiFile: PsiFile): Boolean {
+        if (psiFile !is JsonFile) return false
+        return JsonConverter(psiFile).isValid()
     }
 }

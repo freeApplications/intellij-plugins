@@ -1,14 +1,18 @@
 package jp.freeapps.intellij.plugin.phparray.converter
 
+import com.intellij.json.psi.JsonFile
+import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase
 import io.mockk.every
 import io.mockk.mockkObject
 import jp.freeapps.intellij.plugin.phparray.settings.AppSettingsState
 import org.junit.Test
-import kotlin.test.assertEquals
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
 
-internal class JsonConverterTest {
+@RunWith(JUnit4::class)
+internal class JsonConverterTest : LightJavaCodeInsightFixtureTestCase() {
     @Test
-    fun testFormat() {
+    fun testKeepFormat() {
         val json = """
 [
   {"int" :12345, "float" :123.45, "string": "12345", "boolean" : true},
@@ -18,29 +22,29 @@ internal class JsonConverterTest {
 """
         val expectedDefault = """
 array(
-  array('int' => 12345, 'float' => 123.45, 'string' => '12345', 'boolean' => true),
-    array( 'array' => array( 12345, 123.45, '12345', false ) ),
+  array('int' =>12345, 'float' =>123.45, 'string'=> '12345', 'boolean' => true),
+    array( 'array'=>array( 12345, 123.45, '12345', false ) ),
       array(   array(   'key'   =>   'value'   )   )
 )
 """
         val expectedUseBraket = """
 [
-  ['int' => 12345, 'float' => 123.45, 'string' => '12345', 'boolean' => true],
-    [ 'array' => [ 12345, 123.45, '12345', false ] ],
+  ['int' =>12345, 'float' =>123.45, 'string'=> '12345', 'boolean' => true],
+    [ 'array'=>[ 12345, 123.45, '12345', false ] ],
       [   [   'key'   =>   'value'   ]   ]
 ]
 """
         val expectedUseDoubleQuote = """
 array(
-  array("int" => 12345, "float" => 123.45, "string" => "12345", "boolean" => true),
-    array( "array" => array( 12345, 123.45, "12345", false ) ),
+  array("int" =>12345, "float" =>123.45, "string"=> "12345", "boolean" => true),
+    array( "array"=>array( 12345, 123.45, "12345", false ) ),
       array(   array(   "key"   =>   "value"   )   )
 )
 """
         val expectedUseBraketAndDoubleQuote = """
 [
-  ["int" => 12345, "float" => 123.45, "string" => "12345", "boolean" => true],
-    [ "array" => [ 12345, 123.45, "12345", false ] ],
+  ["int" =>12345, "float" =>123.45, "string"=> "12345", "boolean" => true],
+    [ "array"=>[ 12345, 123.45, "12345", false ] ],
       [   [   "key"   =>   "value"   ]   ]
 ]
 """
@@ -50,19 +54,20 @@ array(
         every { AppSettingsState.getInstance() } returns appSettingsState
 
         // useArray | useSingleQuote
-        assertEquals(expectedDefault, JsonConverter(json).toPhpArray())
+        val jsonFile = createJsonFile(json)
+        assertEquals(expectedDefault, JsonConverter(jsonFile).toPhpArray())
 
         // useBraket | useSingleQuote
         appSettingsState.useBraket = true
-        assertEquals(expectedUseBraket, JsonConverter(json).toPhpArray())
+        assertEquals(expectedUseBraket, JsonConverter(jsonFile).toPhpArray())
 
         // useBraket | useDoubleQuote
         appSettingsState.useDoubleQuote = true
-        assertEquals(expectedUseBraketAndDoubleQuote, JsonConverter(json).toPhpArray())
+        assertEquals(expectedUseBraketAndDoubleQuote, JsonConverter(jsonFile).toPhpArray())
 
         // useArray | useDoubleQuote
         appSettingsState.useBraket = false
-        assertEquals(expectedUseDoubleQuote, JsonConverter(json).toPhpArray())
+        assertEquals(expectedUseDoubleQuote, JsonConverter(jsonFile).toPhpArray())
     }
 
     @Test
@@ -71,16 +76,16 @@ array(
 [{"[{":":"},[{"},[{" : " : ",	"\",\t\"":""}]]
 """
         val expectedDefault = """
-array(array('[{' => ':'),array(array('},[{' => ' : ',	'",\t"' => '')))
+array(array('[{'=>':'),array(array('},[{' => ' : ',	'",\t"'=>'')))
 """
         val expectedUseBraket = """
-[['[{' => ':'],[['},[{' => ' : ',	'",\t"' => '']]]
+[['[{'=>':'],[['},[{' => ' : ',	'",\t"'=>'']]]
 """
         val expectedUseDoubleQuote = """
-array(array("[{" => ":"),array(array("},[{" => " : ",	"\",\t\"" => "")))
+array(array("[{"=>":"),array(array("},[{" => " : ",	"\",\t\""=>"")))
 """
         val expectedUseBraketAndDoubleQuote = """
-[["[{" => ":"],[["},[{" => " : ",	"\",\t\"" => ""]]]
+[["[{"=>":"],[["},[{" => " : ",	"\",\t\""=>""]]]
 """
         // Mocking AppSettingsState
         val appSettingsState = AppSettingsState()
@@ -88,19 +93,20 @@ array(array("[{" => ":"),array(array("},[{" => " : ",	"\",\t\"" => "")))
         every { AppSettingsState.getInstance() } returns appSettingsState
 
         // useArray | useSingleQuote
-        assertEquals(expectedDefault, JsonConverter(json).toPhpArray())
+        val jsonFile = createJsonFile(json)
+        assertEquals(expectedDefault, JsonConverter(jsonFile).toPhpArray())
 
         // useBraket | useSingleQuote
         appSettingsState.useBraket = true
-        assertEquals(expectedUseBraket, JsonConverter(json).toPhpArray())
+        assertEquals(expectedUseBraket, JsonConverter(jsonFile).toPhpArray())
 
         // useBraket | useDoubleQuote
         appSettingsState.useDoubleQuote = true
-        assertEquals(expectedUseBraketAndDoubleQuote, JsonConverter(json).toPhpArray())
+        assertEquals(expectedUseBraketAndDoubleQuote, JsonConverter(jsonFile).toPhpArray())
 
         // useArray | useDoubleQuote
         appSettingsState.useBraket = false
-        assertEquals(expectedUseDoubleQuote, JsonConverter(json).toPhpArray())
+        assertEquals(expectedUseDoubleQuote, JsonConverter(jsonFile).toPhpArray())
     }
 
     @Test
@@ -110,20 +116,20 @@ array(array("[{" => ":"),array(array("},[{" => " : ",	"\",\t\"" => "")))
 "\t:\t\n","\"'\\'\"":    "    "}]
 """
         val expectedDefault = """
-array(array(	'\t'	 => 	
-'\t:\t\n','"\'\\\'"' =>    '    '))
+array(array(	'\t'	=>	
+'\t:\t\n','"\'\\\'"'=>    '    '))
 """
         val expectedUseBraket = """
-[[	'\t'	 => 	
-'\t:\t\n','"\'\\\'"' =>    '    ']]
+[[	'\t'	=>	
+'\t:\t\n','"\'\\\'"'=>    '    ']]
 """
         val expectedUseDoubleQuote = """
-array(array(	"\t"	 => 	
-"\t:\t\n","\"'\\'\"" =>    "    "))
+array(array(	"\t"	=>	
+"\t:\t\n","\"'\\'\""=>    "    "))
 """
         val expectedUseBraketAndDoubleQuote = """
-[[	"\t"	 => 	
-"\t:\t\n","\"'\\'\"" =>    "    "]]
+[[	"\t"	=>	
+"\t:\t\n","\"'\\'\""=>    "    "]]
 """
         // Mocking AppSettingsState
         val appSettingsState = AppSettingsState()
@@ -131,19 +137,20 @@ array(array(	"\t"	 =>
         every { AppSettingsState.getInstance() } returns appSettingsState
 
         // useArray | useSingleQuote
-        assertEquals(expectedDefault, JsonConverter(json).toPhpArray())
+        val jsonFile = createJsonFile(json)
+        assertEquals(expectedDefault, JsonConverter(jsonFile).toPhpArray())
 
         // useBraket | useSingleQuote
         appSettingsState.useBraket = true
-        assertEquals(expectedUseBraket, JsonConverter(json).toPhpArray())
+        assertEquals(expectedUseBraket, JsonConverter(jsonFile).toPhpArray())
 
         // useBraket | useDoubleQuote
         appSettingsState.useDoubleQuote = true
-        assertEquals(expectedUseBraketAndDoubleQuote, JsonConverter(json).toPhpArray())
+        assertEquals(expectedUseBraketAndDoubleQuote, JsonConverter(jsonFile).toPhpArray())
 
         // useArray | useDoubleQuote
         appSettingsState.useBraket = false
-        assertEquals(expectedUseDoubleQuote, JsonConverter(json).toPhpArray())
+        assertEquals(expectedUseDoubleQuote, JsonConverter(jsonFile).toPhpArray())
     }
 
     @Test
@@ -173,21 +180,21 @@ array(array(	"\t"	 =>
         val expected = """
 array(
   array(
-    'key' => 'value',
+    'key'=> 'value',
   ),
   array(
     'element',
   ),
   array(), array(),
   array(
-    'key1' => array(
-      'key' => 123,
+    'key1'=> array(
+      'key'=> 123,
     ),
-    'key2' => array(
-      'key' => array( 456, 789, ),
+    'key2'=> array(
+      'key'=> array( 456, 789, ),
     ),
-    'key3' => array(
-      'key' => array( 'key' => 'value', ),
+    'key3'=> array(
+      'key'=> array( 'key'=> 'value', ),
     ),
   ),
 )
@@ -199,6 +206,11 @@ array(
 
         // appendComma
         appSettingsState.appendComma = true
-        assertEquals(expected, JsonConverter(json).toPhpArray())
+        val jsonFile = createJsonFile(json)
+        assertEquals(expected, JsonConverter(jsonFile).toPhpArray())
+    }
+
+    private fun createJsonFile(json: String): JsonFile {
+        return myFixture.configureByText("target.json", json) as JsonFile
     }
 }

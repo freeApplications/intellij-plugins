@@ -1,10 +1,13 @@
 package jp.freeapps.intellij.plugin.phparray.action
 
+import com.intellij.lang.Language
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.util.TextRange
+import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiFileFactory
 
 /**
  * Basis for menu actions that replace a selection of characters.
@@ -32,7 +35,10 @@ abstract class BaseAction : AnAction() {
         var diffLength = 0
         WriteCommandAction.runWriteCommandAction(project) {
             val text = document.getText(TextRange(start, end))
-            val replacedText = replaceSelectedText(text)
+            // create psi file
+            val factory = PsiFileFactory.getInstance(project)
+            val psiFile = factory.createFileFromText(getLanguage(), text)
+            val replacedText = replaceSelectedText(psiFile)
             document.replaceString(start, end, replacedText)
             diffLength = replacedText.length - text.length
         }
@@ -41,11 +47,17 @@ abstract class BaseAction : AnAction() {
     }
 
     /**
+     * @return Language of conversion source.
+     */
+    abstract fun getLanguage(): Language
+
+    /**
      * Replace the selected text with something else useful.
      *
-     * @param selectedText selected text
+     * @param psiFile psi file of selected text
+     * @return replaced text
      */
-    abstract fun replaceSelectedText(selectedText: String): String
+    abstract fun replaceSelectedText(psiFile: PsiFile): String
 
     /**
      * Sets visibility and enables this action menu item if:
@@ -69,17 +81,20 @@ abstract class BaseAction : AnAction() {
             val start = primaryCaret.selectionStart
             val end = primaryCaret.selectionEnd
             val text = document.getText(TextRange(start, end))
-            e.presentation.isEnabledAndVisible = isValid(text)
+            // create psi file
+            val factory = PsiFileFactory.getInstance(project)
+            val psiFile = factory.createFileFromText(getLanguage(), text)
+            e.presentation.isEnabledAndVisible = isValid(psiFile)
         } else {
             e.presentation.isEnabledAndVisible = false
         }
     }
 
     /**
-     * Determine if the selected text is a valid replaceable string.
+     * Determine if the psi file of selected text is a valid replaceable content.
      *
-     * @param selectedText selected text
+     * @param psiFile psi file of selected text
      * @return determine result
      */
-    abstract fun isValid(selectedText: String): Boolean
+    abstract fun isValid(psiFile: PsiFile): Boolean
 }

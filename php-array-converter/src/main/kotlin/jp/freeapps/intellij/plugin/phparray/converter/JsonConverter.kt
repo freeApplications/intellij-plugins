@@ -1,11 +1,16 @@
 package jp.freeapps.intellij.plugin.phparray.converter
 
-import com.fasterxml.jackson.core.JsonProcessingException
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.intellij.json.psi.*
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiErrorElement
+import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiWhiteSpace
+import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.refactoring.suggested.endOffset
+import com.intellij.refactoring.suggested.startOffset
 import jp.freeapps.intellij.plugin.phparray.settings.AppSettingsState
 
-class JsonConverter(json: String) {
+class JsonConverter(psiFile: JsonFile) {
     // constants
     private val openBraket = "["
     private val closeBraket = "]"
@@ -14,133 +19,115 @@ class JsonConverter(json: String) {
     private val openArray = "array("
     private val closeArray = ")"
     private val colon = ":"
-    private val arrow = " => "
+    private val arrow = "=>"
     private val singleQuote = "'"
     private val doubleQuote = "\""
     private val comma = ","
 
     // variables
-    private var jsonString: String = json
-    private var jsonObject: Any? = null
-    private var currentIndex: Int = 0
-    private var useBraket = false
-    private var useDoubleQuote = false
-    private var appendComma = false
+    private val jsonFile = psiFile
+    private val jsonText = psiFile.text
+    private var currentIndex = 0
+
+    // settings
+    private val useBraket: Boolean
+    private val useDoubleQuote: Boolean
+    private val appendComma: Boolean
+    private val quote: String
 
     init {
-        val mapper = ObjectMapper()
-        try {
-            jsonObject = mapper.readValue<Any>(json, object : TypeReference<Any?>() {})
-        } catch (jsonProcessingException: JsonProcessingException) {
-            // invalid json string.
-        }
         val settings = AppSettingsState.getInstance()
         useBraket = settings.useBraket
         useDoubleQuote = settings.useDoubleQuote
         appendComma = settings.appendComma
-    }
-
-    fun isValid(): Boolean {
-        return jsonObject != null && (jsonObject is List<*> || jsonObject is Map<*, *>)
+        quote = if (useDoubleQuote) doubleQuote else singleQuote
     }
 
     fun toPhpArray(): String {
-        if (!isValid()) {
-            return ""
-        }
+        if (!isValid()) return jsonText
         currentIndex = 0
-        return toPhpArray(jsonObject as Any)
+        return toPhpArray(jsonFile)
     }
 
-    private fun toPhpArray(jsonItem: Any, hierarchy: Int = 0): String {
-        if (jsonItem is List<*>) {
-            return listToPhpArray(jsonItem, hierarchy)
-        }
-        if (jsonItem is Map<*, *>) {
-            return mapToPhpArray(jsonItem, hierarchy)
-        }
-        // item is a string key or primitive value
-        val string: String = jsonItem as? String ?: jsonItem.toString()
-        var searchString = replaceEscapeSequence(string, true)
-        if (searchString.isEmpty() || isOnlySyntaxCharacters(searchString)) {
-            searchString = "$doubleQuote$jsonItem$doubleQuote"
-        }
-        val positionIndex = jsonString.indexOf(searchString, currentIndex)
-        val syntax: String = replaceSyntax(positionIndex)
-        currentIndex = positionIndex + searchString.length
-        return syntax + if (jsonItem is String) {
-            val quote = if (useDoubleQuote) doubleQuote else singleQuote
-            "$quote${replaceEscapeSequence(string, useDoubleQuote)}$quote"
-        } else jsonItem.toString()
-    }
-
-    private fun listToPhpArray(list: List<*>, hierarchy: Int): String {
-        val builder = StringBuilder()
-        list.forEach { item ->
-            builder.append(this.toPhpArray(item as Any, hierarchy + 1))
-        }
-        if (appendComma) {
-            if (list.isNotEmpty()) {
-                builder.append(comma)
+    private fun toPhpArray(jsonItem: PsiElement): String {
+        val builder = StringBuilder(jsonItem.textLength)
+        jsonItem.children.forEach { child ->
+            when (child) {
+                is JsonArray, is JsonObject -> {
+                    builder.append(toPhpArray(child))
+                }
+                is JsonProperty -> {
+                    builder.append(toPhpArray(child))
+                }
+                is JsonLiteral -> {
+                    builder.append(toPhpArray(child))
+                }
             }
-            val positionIndex = jsonString.indexOf(closeBraket, currentIndex) + closeBraket.length
-            builder.append(replaceSyntax(positionIndex))
-            currentIndex = positionIndex
         }
-        if (hierarchy == 0 && currentIndex < jsonString.length) {
-            builder.append(replaceSyntax(jsonString.length))
+        if (appendComma && builder.isNotEmpty() && (jsonItem is JsonArray || jsonItem is JsonObject)) {
+            builder.append(comma)
+            val syntax = jsonText.substring(currentIndex, jsonItem.endOffset)
+            builder.append(replaceSyntax(syntax))
+            currentIndex = jsonItem.endOffset
+        }
+        if (jsonItem is PsiFile && currentIndex < jsonItem.endOffset) {
+            val syntax = jsonText.substring(currentIndex)
+            builder.append(replaceSyntax(syntax))
         }
         return builder.toString()
     }
 
-    private fun mapToPhpArray(map: Map<*, *>, hierarchy: Int): String {
+    private fun toPhpArray(jsonItem: JsonLiteral): String {
         val builder = StringBuilder()
-        map.forEach { item ->
-            builder
-                .append(this.toPhpArray(item.key as Any))
-                .append(this.toPhpArray(item.value as Any, hierarchy + 1))
+        if (currentIndex < jsonItem.startOffset) {
+            val syntax = jsonText.substring(currentIndex, jsonItem.startOffset)
+            builder.append(replaceSyntax(syntax))
         }
-        if (appendComma) {
-            if (map.isNotEmpty()) {
-                builder.append(comma)
-            }
-            val positionIndex = jsonString.indexOf(closeBrace, currentIndex) + closeBrace.length
-            builder.append(replaceSyntax(positionIndex))
-            currentIndex = positionIndex
+        var value = jsonItem.text
+        if (jsonItem is JsonStringLiteral) {
+            value = replaceEscapeQuote(value.substring(1, jsonItem.textLength - 1))
+            value = "$quote$value$quote"
         }
-        if (hierarchy == 0 && currentIndex < jsonString.length) {
-            builder.append(replaceSyntax(jsonString.length))
-        }
+        builder.append(value)
+        currentIndex = jsonItem.endOffset
         return builder.toString()
     }
 
-    private fun replaceEscapeSequence(string: String, useDoubleQuote: Boolean): String {
+    private fun replaceEscapeQuote(string: String): String {
+        if (useDoubleQuote) {
+            return string
+        }
         return string
-            .replace("\\", "\\\\")
-            .replace("\b", "\\b")
-            .replace("\n", "\\n")
-            .replace("\r", "\\r")
-            .replace("\t", "\\t")
-            .replace(
-                if (useDoubleQuote) doubleQuote else singleQuote,
-                if (useDoubleQuote) "\\$doubleQuote" else "\\$singleQuote"
-            )
+            .replace(singleQuote, "\\$singleQuote")
+            .replace("\\$doubleQuote", doubleQuote)
     }
 
-    private fun isOnlySyntaxCharacters(string: String): Boolean {
-        return Regex("""^[{\[":, \]}]+$""").matches(string)
-    }
-
-    private fun replaceSyntax(positionIndex: Int): String {
-        return jsonString.substring(currentIndex, positionIndex)
+    private fun replaceSyntax(syntax: String): String {
+        return syntax
             .replace(openBrace, openBraket)
             .replace(closeBrace, closeBraket)
             .replace(openBraket, if (useBraket) openBraket else openArray)
             .replace(closeBraket, if (useBraket) closeBraket else closeArray)
-            .replace(" $colon ", arrow)
-            .replace(" $colon", arrow)
-            .replace("$colon ", arrow)
             .replace(colon, arrow)
-            .replace(doubleQuote, "")
+    }
+
+    fun isValid(): Boolean {
+        return isValidType(jsonFile)
+    }
+
+    private fun isValidType(jsonItem: PsiElement): Boolean {
+        val errors = PsiTreeUtil.getChildrenOfType(jsonItem, PsiErrorElement::class.java)
+        if (errors != null && errors.isNotEmpty()) return false
+        jsonItem.children.forEach { child ->
+            when {
+                child is JsonArray || child is JsonObject || child is JsonProperty -> {
+                    if (!isValidType(child)) return false
+                }
+                child !is JsonLiteral && child !is PsiWhiteSpace -> {
+                    return false
+                }
+            }
+        }
+        return true
     }
 }

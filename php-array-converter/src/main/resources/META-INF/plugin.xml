@@ -6,6 +6,7 @@
     <description><![CDATA[
       <h3>PHP Array Converter</h3>
       <p>Replaces selected JSON text with PHP Array.</p>
+      <p>Replaces selected PHP Array text with JSON.</p>
     ]]></description>
 
     <!-- please see https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html
@@ -32,6 +33,12 @@
                 class="jp.freeapps.intellij.plugin.phparray.action.JsonToPhpArrayAction"
                 text="JSON to PHP Array"
                 description="Replaces selected JSON text with PHP Array.">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+        <action id="jp.freeapps.intellij.plugin.phparray.action.PhpArrayToJsonAction"
+                class="jp.freeapps.intellij.plugin.phparray.action.PhpArrayToJsonAction"
+                text="PHP Array to JSON"
+                description="Replaces selected PHP Array text with JSON.">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
     </actions>

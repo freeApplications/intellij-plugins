@@ -37,13 +37,29 @@ abstract class BaseAction : AnAction() {
             val text = document.getText(TextRange(start, end))
             // create psi file
             val factory = PsiFileFactory.getInstance(project)
-            val psiFile = factory.createFileFromText(getLanguage(), text)
-            val replacedText = replaceSelectedText(psiFile)
+            val psiFile = factory.createFileFromText(getLanguage(), appendAffixes(text))
+            val replacedText = removeAffixes(replaceSelectedText(psiFile))
             document.replaceString(start, end, replacedText)
             diffLength = replacedText.length - text.length
         }
         // Select the text range that was just replaced
         primaryCaret.setSelection(start, end + diffLength)
+    }
+
+    /**
+     * @param text selected text
+     * @return Text with affixes appended to selected text
+     */
+    protected open fun appendAffixes(text: String): String {
+        return text
+    }
+
+    /**
+     * @param text replaced text
+     * @return Text with affixes removed from the replaced text
+     */
+    protected open fun removeAffixes(text: String): String {
+        return text
     }
 
     /**
@@ -80,7 +96,7 @@ abstract class BaseAction : AnAction() {
             val primaryCaret = editor.caretModel.primaryCaret
             val start = primaryCaret.selectionStart
             val end = primaryCaret.selectionEnd
-            val text = document.getText(TextRange(start, end))
+            val text = appendAffixes(document.getText(TextRange(start, end)))
             // create psi file
             val factory = PsiFileFactory.getInstance(project)
             val psiFile = factory.createFileFromText(getLanguage(), text)

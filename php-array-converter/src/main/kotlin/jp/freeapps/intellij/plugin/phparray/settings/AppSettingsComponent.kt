@@ -7,6 +7,7 @@ import com.intellij.util.ui.JBUI
 import java.awt.GridBagConstraints
 import java.awt.GridBagConstraints.*
 import java.awt.GridBagLayout
+import java.util.*
 import javax.swing.ButtonGroup
 import javax.swing.JComponent
 import javax.swing.JPanel
@@ -16,6 +17,8 @@ import javax.swing.JSeparator
  * Supports creating and managing a [JPanel] for the Settings Dialog.
  */
 class AppSettingsComponent : JPanel(GridBagLayout()) {
+    private val resourceBundle = ResourceBundle.getBundle("messages/PluginBundle")
+
     // constants
     private val leftInset = 20
     private val rightInset = 10
@@ -26,17 +29,17 @@ class AppSettingsComponent : JPanel(GridBagLayout()) {
 
     // PHP Array syntax
     @Suppress("DialogTitleCapitalization")
-    private val useArrayOption = JBRadioButton("array( )")
-    private val useBraketOption = JBRadioButton("[ ]")
+    private val useArrayOption = JBRadioButton(message("array"))
+    private val useBraketOption = JBRadioButton(message("braket"))
     private val arraySyntax: Array<JBRadioButton> = arrayOf(useArrayOption, useBraketOption)
 
     // String quotation marks
-    private val useSingleQuoteOption = JBRadioButton("Single quotes")
-    private val useDoubleQuoteOption = JBRadioButton("Double quotes")
+    private val useSingleQuoteOption = JBRadioButton(message("singleQuotes"))
+    private val useDoubleQuoteOption = JBRadioButton(message("doubleQuotes"))
     private val stringQuotationMarks: Array<JBRadioButton> = arrayOf(useSingleQuoteOption, useDoubleQuoteOption)
 
     // Add comma to last element
-    private val appendCommaOption = JBCheckBox("Add comma to last element")
+    private val appendCommaOption = JBCheckBox(message("addCommaToLastElement"))
 
     val preferredFocusedComponent: JComponent
         get() = useArrayOption
@@ -63,12 +66,12 @@ class AppSettingsComponent : JPanel(GridBagLayout()) {
 
     init {
         // JSON to PHP Array Settings
-        addTitle("JSON to PHP Array")
+        addTitle(message("title"))
         addOptions(
             mapOf(
-                "PHP Array syntax : " to arraySyntax,
-                "String quotation marks : " to stringQuotationMarks,
-                "Add comma to last element : " to arrayOf(appendCommaOption),
+                "${message("phpArraySyntax")} : " to arraySyntax,
+                "${message("stringQuotationMarks")} : " to stringQuotationMarks,
+                "${message("addCommaToLastElement")} : " to arrayOf(appendCommaOption),
             )
         )
         groupingRadioButtons(arraySyntax)
@@ -135,5 +138,9 @@ class AppSettingsComponent : JPanel(GridBagLayout()) {
     private fun groupingRadioButtons(radioButtons: Array<JBRadioButton>) {
         val buttonGroup = ButtonGroup()
         radioButtons.forEach { radioButton -> buttonGroup.add(radioButton) }
+    }
+
+    private fun message(key: String): String {
+        return resourceBundle.getString("settings.JsonToPhpArray.$key")
     }
 }

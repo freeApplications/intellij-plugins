@@ -18,6 +18,8 @@
     <!-- Minimum and maximum build of IDE compatible with the plugin -->
     <idea-version since-build="211"/>
 
+    <resource-bundle>messages.PluginBundle</resource-bundle>
+
     <extensions defaultExtensionNs="com.intellij">
         <!-- Add your extensions here -->
         <applicationConfigurable parentId="tools"
@@ -30,15 +32,11 @@
     <actions>
         <!-- Add your actions here -->
         <action id="jp.freeapps.intellij.plugin.phparray.action.JsonToPhpArrayAction"
-                class="jp.freeapps.intellij.plugin.phparray.action.JsonToPhpArrayAction"
-                text="JSON to PHP Array"
-                description="Replaces selected JSON text with PHP Array.">
+                class="jp.freeapps.intellij.plugin.phparray.action.JsonToPhpArrayAction">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
         <action id="jp.freeapps.intellij.plugin.phparray.action.PhpArrayToJsonAction"
-                class="jp.freeapps.intellij.plugin.phparray.action.PhpArrayToJsonAction"
-                text="PHP Array to JSON"
-                description="Replaces selected PHP Array text with JSON.">
+                class="jp.freeapps.intellij.plugin.phparray.action.PhpArrayToJsonAction">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
     </actions>

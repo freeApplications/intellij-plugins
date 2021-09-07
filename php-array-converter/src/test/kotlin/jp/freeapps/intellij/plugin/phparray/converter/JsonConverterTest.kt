@@ -169,7 +169,7 @@ array(array(	"\t"	=>
       "key": 123
     },
     "key2": {
-      "key": [ 456, 789 ]
+      "key": [ 456, 789, ],
     },
     "key3": {
       "key": { "key": "value" }

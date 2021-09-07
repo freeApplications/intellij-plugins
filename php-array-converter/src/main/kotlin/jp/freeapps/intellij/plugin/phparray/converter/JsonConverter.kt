@@ -66,8 +66,10 @@ class JsonConverter(psiFile: JsonFile) {
             }
         }
         if (appendComma && builder.isNotEmpty() && (jsonItem is JsonArray || jsonItem is JsonObject)) {
-            builder.append(comma)
             val syntax = jsonText.substring(currentIndex, jsonItem.endOffset)
+            if (!syntax.contains(comma)) {
+                builder.append(comma)
+            }
             builder.append(replaceSyntax(syntax))
             currentIndex = jsonItem.endOffset
         }

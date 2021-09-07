@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'io.github.freeApplications'
-version '0.6.0'
+version '0.7.0'
 
 sourceCompatibility = 11
 
@@ -31,6 +31,7 @@ intellij {
 patchPluginXml {
     changeNotes = """
       <ul>
+        <li>v0.7.0 : ➕ Show error hint</li>
         <li>v0.5.0 : ➕ PHP Array to JSON</li>
         <li>v0.2.0 : ➕ Settings</li>
         <li>v0.1.0 : ➕ JSON to PHP Array</li>

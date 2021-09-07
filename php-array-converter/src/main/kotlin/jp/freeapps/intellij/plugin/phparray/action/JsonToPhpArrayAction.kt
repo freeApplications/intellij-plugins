@@ -26,12 +26,4 @@ class JsonToPhpArrayAction : BaseAction() {
         if (psiFile !is JsonFile) return psiFile.text
         return JsonConverter(psiFile).toPhpArray()
     }
-
-    /**
-     * Determine if the selected text is a psi file of valid replaceable json text.
-     */
-    override fun isValid(psiFile: PsiFile): Boolean {
-        if (psiFile !is JsonFile) return false
-        return JsonConverter(psiFile).isValid()
-    }
 }

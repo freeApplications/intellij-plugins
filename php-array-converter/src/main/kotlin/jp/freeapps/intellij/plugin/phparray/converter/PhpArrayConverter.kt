@@ -3,13 +3,14 @@ package jp.freeapps.intellij.plugin.phparray.converter
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.PsiFile
-import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.PsiWhiteSpace
+import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.elementType
 import com.intellij.refactoring.suggested.endOffset
 import com.intellij.refactoring.suggested.startOffset
 import com.jetbrains.php.lang.psi.PhpFile
 import com.jetbrains.php.lang.psi.elements.*
+import jp.freeapps.intellij.plugin.phparray.exception.ConvertException
 
 class PhpArrayConverter(psiFile: PhpFile) {
     // constants
@@ -37,7 +38,7 @@ class PhpArrayConverter(psiFile: PhpFile) {
     private var currentIndex = 0
 
     fun toJson(): String {
-        if (!isValid()) return phpText
+        checkValidType(phpFile)
         currentIndex = 0
         return toJson(phpFile)
     }
@@ -182,30 +183,24 @@ class PhpArrayConverter(psiFile: PhpFile) {
         return string
     }
 
-    fun isValid(): Boolean {
-        return isValidType(phpFile)
-    }
-
-    private fun isValidType(phpItem: PsiElement): Boolean {
+    private fun checkValidType(phpItem: PsiElement) {
         val errors = PsiTreeUtil.getChildrenOfType(phpItem, PsiErrorElement::class.java)
-        if (errors != null && errors.isNotEmpty()) return false
+        if (errors != null && errors.isNotEmpty()) throw ConvertException(errors.first())
         phpItem.children.forEach { child ->
             when {
                 child is Statement || child is ArrayCreationExpression || child is ArrayHashElement || child is UnaryExpression -> {
-                    if (!isValidType(child)) return false
+                    checkValidType(child)
                 }
                 child is PhpPsiElement && arrayElement.contains(child.elementType.toString()) -> {
-                    if (!isValidType(child)) return false
+                    checkValidType(child)
                 }
                 child is ConstantReference -> {
-                    if (!constantReferenceType.contains(child.type.toString())) return false
+                    if (!constantReferenceType.contains(child.type.toString())) throw ConvertException(child)
                 }
                 child !is StringLiteralExpression && child !is PsiWhiteSpace -> {
-                    if (child !is PhpPsiElement) return false
-                    if (child.elementType.toString() != number) return false
+                    if (child !is PhpPsiElement || child.elementType.toString() != number) throw ConvertException(child)
                 }
             }
         }
-        return true
     }
 }

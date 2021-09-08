@@ -6,7 +6,11 @@ import com.intellij.refactoring.suggested.endOffset
 import com.intellij.refactoring.suggested.startOffset
 import java.util.*
 
-class ConvertException(psiElement: PsiElement) : Exception() {
+class ConvertException(
+    psiElement: PsiElement,
+    messageKey: String,
+    showSupplementaryMessage: Boolean = true
+) : Exception() {
     private val resourceBundle = ResourceBundle.getBundle("messages/PluginBundle")
 
     var adjustOffset: Int = 0
@@ -14,9 +18,13 @@ class ConvertException(psiElement: PsiElement) : Exception() {
         get() = field + adjustOffset
     val endOffset: Int = psiElement.endOffset
         get() = field + adjustOffset
-    override val message: String = if (psiElement is PsiErrorElement) {
-        "${resourceBundle.getString("error.syntax")} ( ${psiElement.errorDescription} )"
-    } else {
-        "${resourceBundle.getString("error.literalType")} ( ${psiElement.text} )"
+    override val message: String = resourceBundle.getString(messageKey)
+        get() = field + if (additionalText != null) " ( $additionalText )" else ""
+    private val additionalText: String?
+
+    init {
+        additionalText = if (showSupplementaryMessage) {
+            if (psiElement is PsiErrorElement) psiElement.errorDescription else psiElement.text
+        } else null
     }
 }

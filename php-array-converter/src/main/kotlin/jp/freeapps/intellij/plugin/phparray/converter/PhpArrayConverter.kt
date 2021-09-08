@@ -185,7 +185,7 @@ class PhpArrayConverter(psiFile: PhpFile) {
 
     private fun checkValidType(phpItem: PsiElement) {
         val errors = PsiTreeUtil.getChildrenOfType(phpItem, PsiErrorElement::class.java)
-        if (errors != null && errors.isNotEmpty()) throw ConvertException(errors.first())
+        if (errors != null && errors.isNotEmpty()) throw ConvertException(errors.first(), "error.syntax")
         phpItem.children.forEach { child ->
             when {
                 child is Statement || child is ArrayCreationExpression || child is ArrayHashElement || child is UnaryExpression -> {
@@ -195,10 +195,14 @@ class PhpArrayConverter(psiFile: PhpFile) {
                     checkValidType(child)
                 }
                 child is ConstantReference -> {
-                    if (!constantReferenceType.contains(child.type.toString())) throw ConvertException(child)
+                    if (!constantReferenceType.contains(child.type.toString())) {
+                        throw ConvertException(child, "error.literalType")
+                    }
                 }
                 child !is StringLiteralExpression && child !is PsiWhiteSpace -> {
-                    if (child !is PhpPsiElement || child.elementType.toString() != number) throw ConvertException(child)
+                    if (child !is PhpPsiElement || child.elementType.toString() != number) {
+                        throw ConvertException(child, "error.literalType")
+                    }
                 }
             }
         }

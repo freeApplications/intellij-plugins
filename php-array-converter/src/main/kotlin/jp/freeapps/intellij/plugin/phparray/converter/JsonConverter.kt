@@ -116,14 +116,14 @@ class JsonConverter(psiFile: JsonFile) {
 
     private fun checkValidType(jsonItem: PsiElement) {
         val errors = PsiTreeUtil.getChildrenOfType(jsonItem, PsiErrorElement::class.java)
-        if (errors != null && errors.isNotEmpty()) throw ConvertException(errors.first())
+        if (errors != null && errors.isNotEmpty()) throw ConvertException(errors.first(), "error.syntax")
         jsonItem.children.forEach { child ->
             when {
                 child is JsonArray || child is JsonObject || child is JsonProperty -> {
                     checkValidType(child)
                 }
                 child !is JsonLiteral && child !is PsiWhiteSpace -> {
-                    throw ConvertException(child)
+                    throw ConvertException(child, "error.literalType")
                 }
             }
         }

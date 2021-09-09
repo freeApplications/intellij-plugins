@@ -210,6 +210,56 @@ array(
         assertEquals(expected, JsonConverter(jsonFile).toPhpArray())
     }
 
+    @Test
+    fun testRemoveComma() {
+        val json = """
+[
+  {
+    "key": "value",
+  },
+  [
+    "element",
+  ],
+  {}, [],
+  {
+    "key1": {
+      "key": 123,
+    },
+    "key2": {
+      "key": [ 456, 789 ]
+    },
+    "key3": {
+      "key": { "key": "value", },
+    },
+  },
+]
+"""
+        val expected = """
+array(
+  array(
+    'key'=> 'value'
+  ),
+  array(
+    'element'
+  ),
+  array(), array(),
+  array(
+    'key1'=> array(
+      'key'=> 123
+    ),
+    'key2'=> array(
+      'key'=> array( 456, 789 )
+    ),
+    'key3'=> array(
+      'key'=> array( 'key'=> 'value' )
+    )
+  )
+)
+"""
+        val jsonFile = createJsonFile(json)
+        assertEquals(expected, JsonConverter(jsonFile).toPhpArray())
+    }
+
     private fun createJsonFile(json: String): JsonFile {
         return myFixture.configureByText("target.json", json) as JsonFile
     }

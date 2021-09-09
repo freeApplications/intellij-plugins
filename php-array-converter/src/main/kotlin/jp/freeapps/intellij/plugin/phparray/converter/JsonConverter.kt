@@ -65,12 +65,20 @@ class JsonConverter(psiFile: JsonFile) {
                 }
             }
         }
-        if (appendComma && builder.isNotEmpty() && (jsonItem is JsonArray || jsonItem is JsonObject)) {
-            val syntax = jsonText.substring(currentIndex, jsonItem.endOffset)
-            if (!syntax.contains(comma)) {
-                builder.append(comma)
+        if (jsonItem is JsonArray || jsonItem is JsonObject) {
+            if (currentIndex < jsonItem.startOffset) {
+                val syntax = jsonText.substring(currentIndex, jsonItem.endOffset)
+                builder.append(replaceSyntax(syntax))
+            } else {
+                var syntax = jsonText.substring(currentIndex, jsonItem.endOffset)
+                if (appendComma && !syntax.contains(comma)) {
+                    syntax = comma + syntax
+                }
+                if (!appendComma && syntax.contains(comma)) {
+                    syntax = syntax.replace(comma, "")
+                }
+                builder.append(replaceSyntax(syntax))
             }
-            builder.append(replaceSyntax(syntax))
             currentIndex = jsonItem.endOffset
         }
         if (jsonItem is PsiFile && currentIndex < jsonItem.endOffset) {

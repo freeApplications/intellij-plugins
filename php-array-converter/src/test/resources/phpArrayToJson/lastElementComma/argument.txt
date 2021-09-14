@@ -1,0 +1,23 @@
+<?php
+
+array(
+  array(
+    'key' => 'value',
+  ),
+  array(
+    'element',
+  ),
+  array(), array(),
+  array(
+    'key1' => array(
+      'key' => 123,
+    ),
+    'key2' => array(
+      'key' => array( 456, 789, ),
+    ),
+    'key3' => array(
+      'key' => array( 'key' => 'value', ),
+    ),
+  ),
+)
+;

@@ -4,246 +4,71 @@ import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase
 import com.jetbrains.php.lang.psi.PhpFile
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.runners.Parameterized
+import org.junit.runners.Parameterized.Parameter
+import org.junit.runners.Parameterized.Parameters
+import java.io.File
 
-@RunWith(JUnit4::class)
+@RunWith(Parameterized::class)
 internal class PhpArrayConverterTest : LightJavaCodeInsightFixtureTestCase() {
-    @Test
-    fun testKeepFormat() {
-        // useArray | useSingleQuote
-        var phpArray = """<?php
-array
-(
-  array('int' => 12345, 'float' => 123.45, 'string' => '12345', 'boolean' => true),
-    array ( 'array' => array( 12345, 123.45, '12345', false ) ),
-      array   (   array(   'key'   =>   'value'   )   )
-)
-;"""
-        val expected = """<?php
-[
-  {"int" : 12345, "float" : 123.45, "string" : "12345", "boolean" : true},
-    { "array" : [ 12345, 123.45, "12345", false ] },
-      [   {   "key"   :   "value"   }   ]
-]
-;"""
-        var phpFile = createPhpFile(phpArray)
-        assertEquals(expected, PhpArrayConverter(phpFile).toJson())
+    @Parameter
+    lateinit var title: String
 
-        // useBraket | useSingleQuote
-        phpArray = """<?php
-[
-  ['int' => 12345, 'float' => 123.45, 'string' => '12345', 'boolean' => true],
-    [ 'array' => [ 12345, 123.45, '12345', false ] ],
-      [   [   'key'   =>   'value'   ]   ]
-]
-;"""
-        phpFile = createPhpFile(phpArray)
-        assertEquals(expected, PhpArrayConverter(phpFile).toJson())
+    @Parameter(1)
+    lateinit var argument: String
 
-        // useBraket | useDoubleQuote
-        phpArray = """<?php
-[
-  ["int" => 12345, "float" => 123.45, "string" => "12345", "boolean" => true],
-    [ "array" => [ 12345, 123.45, "12345", false ] ],
-      [   [   "key"   =>   "value"   ]   ]
-]
-;"""
-        phpFile = createPhpFile(phpArray)
-        assertEquals(expected, PhpArrayConverter(phpFile).toJson())
-
-        // useArray | useDoubleQuote
-        phpArray = """<?php
-array(
-  array("int" => 12345, "float" => 123.45, "string" => "12345", "boolean" => true),
-    array( "array" => array( 12345, 123.45, "12345", false ) ),
-      array(   array(   "key"   =>   "value"   )   )
-)
-;"""
-        phpFile = createPhpFile(phpArray)
-        assertEquals(expected, PhpArrayConverter(phpFile).toJson())
-    }
+    @Parameter(2)
+    lateinit var expected: String
 
     @Test
-    fun testSyntax() {
-        // useArray | useSingleQuote
-        var phpArray = """<?php
-array(array('array(array('=>'=>'),array(array('),array(array('=> '=> ',	'",\t"' => '')))
-;"""
-        var expected = """<?php
-[{"array(array(":"=>"},[{"),array(array(": "=> ",	"\",\t\"" : ""}]]
-;"""
-        var phpFile = createPhpFile(phpArray)
-        assertEquals(expected, PhpArrayConverter(phpFile).toJson())
+    fun test() {
+        val psiFile = myFixture.configureByText("target.php", argument)
+        val phpArrayConverter = PhpArrayConverter(psiFile as PhpFile)
 
-        // useBraket | useSingleQuote
-        phpArray = """<?php
-[['[['=>'=>'],[['],[['=> '=> ',	'",\t"' => '']]]
-;"""
-        expected = """<?php
-[{"[[":"=>"},[{"],[[": "=> ",	"\",\t\"" : ""}]]
-;"""
-        phpFile = createPhpFile(phpArray)
-        assertEquals(expected, PhpArrayConverter(phpFile).toJson())
+        // when:
+        val actual = phpArrayConverter.toJson()
 
-        // useBraket | useDoubleQuote
-        phpArray = """<?php
-[["[["=>"=>"],[["],[["=> "=> ",	"\",\t\"" => ""]]]
-;"""
-        expected = """<?php
-[{"[[":"=>"},[{"],[[": "=> ",	"\",\t\"" : ""}]]
-;"""
-        phpFile = createPhpFile(phpArray)
-        assertEquals(expected, PhpArrayConverter(phpFile).toJson())
-
-        // useArray | useDoubleQuote
-        phpArray = """<?php
-array(array("array(array("=>"=>"),array(array("),array(array("=> "=> ",	"\",\t\"" => "")))
-;"""
-        expected = """<?php
-[{"array(array(":"=>"},[{"),array(array(": "=> ",	"\",\t\"" : ""}]]
-;"""
-        phpFile = createPhpFile(phpArray)
-        assertEquals(expected, PhpArrayConverter(phpFile).toJson())
-
-        // all
-        phpArray = """<?php
-array(["array(["=>'=>'],[array("],[array("=> '=> ',	"\",\t\"" => "")])
-;"""
-        expected = """<?php
-[{"array([":"=>"},[{"],[array(": "=> ",	"\",\t\"" : ""}]]
-;"""
-        phpFile = createPhpFile(phpArray)
-        assertEquals(expected, PhpArrayConverter(phpFile).toJson())
+        // then:
+        assertEquals(expected, actual)
     }
 
-    @Test
-    fun testEscapeSequence() {
-        // useArray | useSingleQuote
-        var phpArray = """<?php
-array(array(	'\t'	=>	
-'\t:\t\n','"\'\\\'"'=>    '    '))
-;"""
-        val expected = """<?php
-[{	"\t"	:	
-"\t:\t\n","\"'\\'\"":    "    "}]
-;"""
-        var phpFile = createPhpFile(phpArray)
-        assertEquals(expected, PhpArrayConverter(phpFile).toJson())
+    companion object {
+        @JvmStatic
+        @Parameters(name = "{0}")
+        fun dataProvider(): Iterable<Any> {
+            return listOf(
+                createPattern("keepFormat", "useArray,useSingleQuote"),
+                createPattern("keepFormat", "useBraket,useSingleQuote"),
+                createPattern("keepFormat", "useArray,useDoubleQuote"),
+                createPattern("keepFormat", "useBraket,useDoubleQuote"),
+                createPattern("syntax", "useArray,useSingleQuote"),
+                createPattern("syntax", "useBraket,useSingleQuote"),
+                createPattern("syntax", "useArray,useDoubleQuote"),
+                createPattern("syntax", "useBraket,useDoubleQuote"),
+                createPattern("syntax", "all"),
+                createPattern("escapeSequence", "useArray,useSingleQuote"),
+                createPattern("escapeSequence", "useBraket,useSingleQuote"),
+                createPattern("escapeSequence", "useArray,useDoubleQuote"),
+                createPattern("escapeSequence", "useBraket,useDoubleQuote"),
+                createPattern("lastElementComma", "remove"),
+                createPattern("keyPattern", "all"),
+            )
+        }
 
-        // useBraket | useSingleQuote
-        phpArray = """<?php
-[[	'\t'	=>	
-'\t:\t\n','"\'\\\'"'=>    '    ']]
-;"""
-        phpFile = createPhpFile(phpArray)
-        assertEquals(expected, PhpArrayConverter(phpFile).toJson())
+        private fun createPattern(directory: String, pattern: String): Array<Any> {
+            return arrayOf(
+                "$directory($pattern)",
+                loadResource(directory, pattern, false),
+                loadResource(directory, pattern, true),
+            )
+        }
 
-        // useBraket | useDoubleQuote
-        phpArray = """<?php
-[[	"\t"	=>	
-"\t:\t\n","\"'\\'\""=>    "    "]]
-;"""
-        phpFile = createPhpFile(phpArray)
-        assertEquals(expected, PhpArrayConverter(phpFile).toJson())
-
-        // useArray | useDoubleQuote
-        phpArray = """<?php
-array(array(	"\t"	=>	
-"\t:\t\n","\"'\\'\""=>    "    "))
-;"""
-        phpFile = createPhpFile(phpArray)
-        assertEquals(expected, PhpArrayConverter(phpFile).toJson())
-    }
-
-    @Test
-    fun testRemoveComma() {
-        val phpArray = """<?php
-array(
-  array(
-    'key' => 'value',
-  ),
-  array(
-    'element',
-  ),
-  array(), array(),
-  array(
-    'key1' => array(
-      'key' => 123,
-    ),
-    'key2' => array(
-      'key' => array( 456, 789, ),
-    ),
-    'key3' => array(
-      'key' => array( 'key' => 'value', ),
-    ),
-  ),
-)
-;"""
-        val expected = """<?php
-[
-  {
-    "key" : "value"
-  },
-  [
-    "element"
-  ],
-  [], [],
-  {
-    "key1" : {
-      "key" : 123
-    },
-    "key2" : {
-      "key" : [ 456, 789 ]
-    },
-    "key3" : {
-      "key" : { "key" : "value" }
-    }
-  }
-]
-;"""
-        val phpFile = createPhpFile(phpArray)
-        assertEquals(expected, PhpArrayConverter(phpFile).toJson())
-    }
-
-    @Test
-    fun testKeyPattern() {
-        val phpArray = """<?php
-array(
-    1     => 'a',
-    '1'   => 'b',
-    1.5   => 'c',
-    -1    => 'd',
-    '01'  => 'e',
-    '1.5' => 'f',
-    true  => 'g',
-    false => 'h',
-    ''    => 'i',
-    null  => 'j',
-    'k',
-    2     => 'l',
-)
-;"""
-        val expected = """<?php
-{
-    "1"     : "a",
-    "1"   : "b",
-    "1.5"   : "c",
-    "-1"    : "d",
-    "01"  : "e",
-    "1.5" : "f",
-    "true"  : "g",
-    "false" : "h",
-    ""    : "i",
-    "null"  : "j",
-    "2":"k",
-    "2"     : "l"
-}
-;"""
-        val phpFile = createPhpFile(phpArray)
-        assertEquals(expected, PhpArrayConverter(phpFile).toJson())
-    }
-
-    private fun createPhpFile(phpArray: String): PhpFile {
-        return myFixture.configureByText("target.php", phpArray) as PhpFile
+        private const val root = "src/test/resources/phpArrayToJson"
+        private fun loadResource(directory: String, pattern: String, isExpected: Boolean): String {
+            val name = if (isExpected) "expected" else "argument"
+            val file = File("$root/$directory/$name($pattern).txt")
+            if (file.exists()) return file.readText()
+            return File("$root/$directory/$name.txt").readText()
+        }
     }
 }

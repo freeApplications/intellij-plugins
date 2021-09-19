@@ -6,7 +6,6 @@ import io.mockk.every
 import io.mockk.mockkObject
 import jp.freeapps.intellij.plugin.phparray.exception.ConvertException
 import jp.freeapps.intellij.plugin.phparray.settings.AppSettingsState
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -88,6 +87,14 @@ internal class JsonConverterTest {
                     loadResource(directory, pattern, true),
                 )
             }
+
+            private const val root = "src/test/resources/jsonToPhpArray"
+            private fun loadResource(directory: String, pattern: String, isExpected: Boolean): String {
+                val name = if (isExpected) "expected" else "argument"
+                val file = File("$root/$directory/$name($pattern).txt")
+                if (file.exists()) return file.readText()
+                return File("$root/$directory/$name.txt").readText()
+            }
         }
     }
 
@@ -139,17 +146,14 @@ internal class JsonConverterTest {
                     )
                 }
             }
-        }
-    }
 
-    @Ignore
-    companion object {
-        private const val root = "src/test/resources/jsonToPhpArray"
-        private fun loadResource(directory: String, pattern: String, isExpected: Boolean): String {
-            val name = if (isExpected) "expected" else "argument"
-            val file = File("$root/$directory/$name($pattern).txt")
-            if (file.exists()) return file.readText()
-            return File("$root/$directory/$name.txt").readText()
+            private const val root = "src/test/resources/jsonToPhpArray"
+            private fun loadResource(directory: String, pattern: String, isExpected: Boolean): String {
+                val name = if (isExpected) "expected" else "argument"
+                val file = File("$root/$directory/$name($pattern).txt")
+                if (file.exists()) return file.readText()
+                return File("$root/$directory/$name.txt").readText()
+            }
         }
     }
 }

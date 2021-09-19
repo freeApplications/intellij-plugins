@@ -124,6 +124,7 @@ internal class JsonConverterTest {
                 return listOf(
                     *createPatterns("syntaxError", 3),
                     *createPatterns("literalTypeError", 2),
+                    *createPatterns("rootElementError", 2),
                 )
             }
 

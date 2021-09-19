@@ -1,0 +1,4 @@
+<?php
+settings.JsonToPhpArray.title=JSON to PHP Array
+settings.JsonToPhpArray.phpArraySyntax=PHP Array syntax
+;

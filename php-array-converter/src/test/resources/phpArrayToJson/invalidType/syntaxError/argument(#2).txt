@@ -1,6 +1,8 @@
 <?php
 
-{
-  "key" => "value"
-}
+array(
+  {
+    "key" => "value"
+  }
+)
 ;

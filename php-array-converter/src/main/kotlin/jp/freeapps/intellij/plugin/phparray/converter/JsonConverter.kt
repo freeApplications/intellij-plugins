@@ -5,7 +5,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiWhiteSpace
-import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.suggested.endOffset
 import com.intellij.refactoring.suggested.startOffset
 import jp.freeapps.intellij.plugin.phparray.exception.ConvertException
@@ -123,11 +122,23 @@ class JsonConverter(psiFile: JsonFile) {
     }
 
     private fun checkValidType(jsonItem: PsiElement) {
-        val errors = PsiTreeUtil.getChildrenOfType(jsonItem, PsiErrorElement::class.java)
-        if (errors != null && errors.isNotEmpty()) throw ConvertException(errors.first(), "error.syntax")
         jsonItem.children.forEach { child ->
+            when (child) {
+                is JsonArray, is JsonObject -> {
+                    checkValidType(child)
+                    return@forEach
+                }
+                !is PsiWhiteSpace -> {
+                    if (jsonItem is JsonFile) {
+                        throw ConvertException(jsonItem, "error.rootElement.json", false)
+                    }
+                }
+            }
             when {
-                child is JsonArray || child is JsonObject || child is JsonProperty -> {
+                child is PsiErrorElement -> {
+                    throw ConvertException(child, "error.syntax")
+                }
+                child is JsonProperty -> {
                     checkValidType(child)
                 }
                 child !is JsonLiteral && child !is PsiWhiteSpace -> {

@@ -27,7 +27,9 @@ class PhpArrayToJsonAction : BaseAction() {
      * Replace the selected text with json string.
      */
     override fun replaceSelectedText(psiFile: PsiFile): String {
-        if (psiFile !is PhpFile) return psiFile.text
+        if (psiFile !is PhpFile || removeAffixes(psiFile.text).trim().isEmpty()) {
+            throw ConvertException(psiFile, "error.rootElement.phpArray", false)
+        }
         try {
             return PhpArrayConverter(psiFile).toJson()
         } catch (e: ConvertException) {

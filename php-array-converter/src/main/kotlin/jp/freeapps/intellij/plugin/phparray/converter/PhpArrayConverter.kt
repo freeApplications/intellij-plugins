@@ -4,7 +4,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiWhiteSpace
-import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.elementType
 import com.intellij.refactoring.suggested.endOffset
 import com.intellij.refactoring.suggested.startOffset
@@ -184,11 +183,23 @@ class PhpArrayConverter(psiFile: PhpFile) {
     }
 
     private fun checkValidType(phpItem: PsiElement) {
-        val errors = PsiTreeUtil.getChildrenOfType(phpItem, PsiErrorElement::class.java)
-        if (errors != null && errors.isNotEmpty()) throw ConvertException(errors.first(), "error.syntax")
         phpItem.children.forEach { child ->
+            when (child) {
+                is Statement, is ArrayCreationExpression -> {
+                    checkValidType(child)
+                    return@forEach
+                }
+                else -> {
+                    if (phpItem is Statement) {
+                        throw ConvertException(phpItem, "error.rootElement.phpArray", false)
+                    }
+                }
+            }
             when {
-                child is Statement || child is ArrayCreationExpression || child is ArrayHashElement || child is UnaryExpression -> {
+                child is PsiErrorElement -> {
+                    throw ConvertException(child, "error.syntax")
+                }
+                child is ArrayHashElement || child is UnaryExpression -> {
                     checkValidType(child)
                 }
                 child is PhpPsiElement && arrayElement.contains(child.elementType.toString()) -> {

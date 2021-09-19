@@ -25,13 +25,15 @@ class AppSettingsConfigurable : Configurable {
 
     override fun isModified(): Boolean {
         val settings = AppSettingsState.getInstance()
-        return settingsComponent!!.useBraket != settings.useBraket
+        return settingsComponent!!.replaceInEditor != settings.replaceInEditor
+                || settingsComponent!!.useBraket != settings.useBraket
                 || settingsComponent!!.useDoubleQuote != settings.useDoubleQuote
                 || settingsComponent!!.appendComma != settings.appendComma
     }
 
     override fun apply() {
         val settings = AppSettingsState.getInstance()
+        settings.replaceInEditor = settingsComponent!!.replaceInEditor
         settings.useBraket = settingsComponent!!.useBraket
         settings.useDoubleQuote = settingsComponent!!.useDoubleQuote
         settings.appendComma = settingsComponent!!.appendComma
@@ -39,6 +41,7 @@ class AppSettingsConfigurable : Configurable {
 
     override fun reset() {
         val settings = AppSettingsState.getInstance()
+        settingsComponent!!.replaceInEditor = settings.replaceInEditor
         settingsComponent!!.useBraket = settings.useBraket
         settingsComponent!!.useDoubleQuote = settings.useDoubleQuote
         settingsComponent!!.appendComma = settings.appendComma

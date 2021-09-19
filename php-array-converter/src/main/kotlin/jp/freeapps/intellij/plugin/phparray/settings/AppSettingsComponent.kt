@@ -27,22 +27,33 @@ class AppSettingsComponent : JPanel(GridBagLayout()) {
     // variables
     private var lineCount = 0
 
+    // Conversion result
+    private val replaceInEditorOption = JBRadioButton(message("conversionResult.replaceInEditor"))
+    private val saveToClipboardOption = JBRadioButton(message("conversionResult.saveToClipboard"))
+    private val conversionResult: Array<JBRadioButton> = arrayOf(replaceInEditorOption, saveToClipboardOption)
+
     // PHP Array syntax
-    @Suppress("DialogTitleCapitalization")
-    private val useArrayOption = JBRadioButton(message("array"))
-    private val useBraketOption = JBRadioButton(message("braket"))
+    private val useArrayOption = JBRadioButton(message("jsonToPhpArray.array"))
+    private val useBraketOption = JBRadioButton(message("jsonToPhpArray.braket"))
     private val arraySyntax: Array<JBRadioButton> = arrayOf(useArrayOption, useBraketOption)
 
     // String quotation marks
-    private val useSingleQuoteOption = JBRadioButton(message("singleQuotes"))
-    private val useDoubleQuoteOption = JBRadioButton(message("doubleQuotes"))
+    private val useSingleQuoteOption = JBRadioButton(message("jsonToPhpArray.singleQuotes"))
+    private val useDoubleQuoteOption = JBRadioButton(message("jsonToPhpArray.doubleQuotes"))
     private val stringQuotationMarks: Array<JBRadioButton> = arrayOf(useSingleQuoteOption, useDoubleQuoteOption)
 
     // Add comma to last element
-    private val appendCommaOption = JBCheckBox(message("addCommaToLastElement"))
+    private val appendCommaOption = JBCheckBox(message("jsonToPhpArray.addCommaToLastElement"))
 
     val preferredFocusedComponent: JComponent
-        get() = useArrayOption
+        get() = replaceInEditorOption
+
+    var replaceInEditor: Boolean
+        get() = replaceInEditorOption.isSelected
+        set(newStatus) {
+            replaceInEditorOption.isSelected = newStatus
+            saveToClipboardOption.isSelected = !newStatus
+        }
 
     var useBraket: Boolean
         get() = useBraketOption.isSelected
@@ -65,13 +76,17 @@ class AppSettingsComponent : JPanel(GridBagLayout()) {
         }
 
     init {
+        // General Settings
+        addOptions(mapOf("${message("conversionResult.title")} : " to conversionResult), true)
+        groupingRadioButtons(conversionResult)
+
         // JSON to PHP Array Settings
-        addTitle(message("title"))
+        addTitle(message("jsonToPhpArray.title"))
         addOptions(
             mapOf(
-                "${message("phpArraySyntax")} : " to arraySyntax,
-                "${message("stringQuotationMarks")} : " to stringQuotationMarks,
-                "${message("addCommaToLastElement")} : " to arrayOf(appendCommaOption),
+                "${message("jsonToPhpArray.phpArraySyntax")} : " to arraySyntax,
+                "${message("jsonToPhpArray.stringQuotationMarks")} : " to stringQuotationMarks,
+                "${message("jsonToPhpArray.addCommaToLastElement")} : " to arrayOf(appendCommaOption),
             )
         )
         groupingRadioButtons(arraySyntax)
@@ -99,7 +114,7 @@ class AppSettingsComponent : JPanel(GridBagLayout()) {
         this.add(titlePanel, constraints)
     }
 
-    private fun addOptions(options: Map<String, Array<out JComponent>>) {
+    private fun addOptions(options: Map<String, Array<out JComponent>>, isGeneral: Boolean = false) {
         fun showLabel(items: Array<out JComponent>): Boolean {
             return items.size > 1 || items[0] !is JBCheckBox
         }
@@ -130,7 +145,7 @@ class AppSettingsComponent : JPanel(GridBagLayout()) {
             }
             rowCount++
         }
-        val insets = JBUI.insets(0, leftInset, bottomInset, 0)
+        val insets = JBUI.insets(0, if (isGeneral) 0 else leftInset, bottomInset, 0)
         val constraints = GridBagConstraints(0, lineCount++, 1, 1, 1.0, 0.0, WEST, HORIZONTAL, insets, 0, 0)
         this.add(optionsPanel, constraints)
     }
@@ -141,6 +156,6 @@ class AppSettingsComponent : JPanel(GridBagLayout()) {
     }
 
     private fun message(key: String): String {
-        return resourceBundle.getString("settings.JsonToPhpArray.$key")
+        return resourceBundle.getString("settings.$key")
     }
 }

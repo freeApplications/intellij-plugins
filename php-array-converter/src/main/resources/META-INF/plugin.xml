@@ -27,6 +27,7 @@
                                  id="jp.freeapps.intellij.plugin.phparray.settings.AppSettingsConfigurable"
                                  displayName="PHP Array Converter"/>
         <applicationService serviceImplementation="jp.freeapps.intellij.plugin.phparray.settings.AppSettingsState"/>
+        <notificationGroup id="Conversion Notification" displayType="BALLOON"/>
     </extensions>
 
     <actions>

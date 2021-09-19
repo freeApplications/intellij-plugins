@@ -2,6 +2,8 @@ package jp.freeapps.intellij.plugin.phparray.action
 
 import com.intellij.codeInsight.hint.HintManager
 import com.intellij.lang.Language
+import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -10,6 +12,10 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
 import jp.freeapps.intellij.plugin.phparray.exception.ConvertException
+import jp.freeapps.intellij.plugin.phparray.settings.AppSettingsState
+import java.awt.Toolkit
+import java.awt.datatransfer.StringSelection
+import java.util.*
 
 /**
  * Basis for menu actions that replace a selection of characters.
@@ -17,6 +23,8 @@ import jp.freeapps.intellij.plugin.phparray.exception.ConvertException
  * @see AnAction
  */
 abstract class BaseAction : AnAction() {
+    private val resourceBundle = ResourceBundle.getBundle("messages/PluginBundle")
+
     /**
      * Replaces the run of text selected by the primary caret.
      *
@@ -42,8 +50,19 @@ abstract class BaseAction : AnAction() {
             val psiFile = factory.createFileFromText(getLanguage(), appendAffixes(text))
             try {
                 val replacedText = removeAffixes(replaceSelectedText(psiFile))
-                document.replaceString(start, end, replacedText)
-                diffLength = replacedText.length - text.length
+                if (AppSettingsState.getInstance().replaceInEditor) {
+                    document.replaceString(start, end, replacedText)
+                    diffLength = replacedText.length - text.length
+                } else {
+                    val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+                    clipboard.setContents(StringSelection(replacedText), null)
+                    NotificationGroupManager.getInstance().getNotificationGroup("Conversion Notification")
+                        .createNotification(
+                            resourceBundle.getString("notification.conversionResult.saveToClipboard"),
+                            NotificationType.INFORMATION
+                        )
+                        .notify(project)
+                }
             } catch (e: ConvertException) {
                 HintManager.getInstance().showErrorHint(
                     editor,

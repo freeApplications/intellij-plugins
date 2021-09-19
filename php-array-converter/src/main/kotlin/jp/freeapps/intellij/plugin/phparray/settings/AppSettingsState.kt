@@ -16,6 +16,7 @@ import com.intellij.util.xmlb.XmlSerializerUtil
     storages = [Storage("PhpArrayConverterPlugin.xml")]
 )
 class AppSettingsState : PersistentStateComponent<AppSettingsState?> {
+    var replaceInEditor = true
     var useBraket = false
     var useDoubleQuote = false
     var appendComma = false

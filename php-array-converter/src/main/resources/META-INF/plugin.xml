@@ -5,8 +5,11 @@
 
     <description><![CDATA[
       <h3>PHP Array Converter</h3>
-      <p>Replaces selected JSON text with PHP Array.</p>
-      <p>Replaces selected PHP Array text with JSON.</p>
+      <p>Converts PHP Arrays and JSON to each other.</p>
+      <ul>
+        <li>Replaces the JSON text selected by the primary caret with PHP Array.</li>
+        <li>Replaces the PHP Array text selected by the primary caret with JSON.</li>
+      </ul>
     ]]></description>
 
     <!-- please see https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html

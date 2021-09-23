@@ -1,13 +1,22 @@
 # php-array-converter
 
-PHP Array Converter plugin for IntelliJ IDEs.
+**PHP Array Converter plugin for IntelliJ IDEs.**  
+**Adds support for mutual conversion between PHP Array and JSON.**
 
 ## Features
 
-Converts PHP Arrays and JSON to each other.
+- Available from the right-click menu in the editor.
+  - JSON to PHP Array
+  - PHP Array to JSON
 
-- Replaces the JSON text selected by the primary caret with PHP Array.
-- Replaces the PHP Array text selected by the primary caret with JSON.
+
+- Cannot convert if variables or function calls are included.  
+  The literal types allowed are:
+  - string
+  - int
+  - float
+  - boolean
+  - null
 
 ## Demo
 

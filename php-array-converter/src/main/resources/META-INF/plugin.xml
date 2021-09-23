@@ -4,11 +4,28 @@
     <vendor url="https://github.com/freeApplications">freeApplications</vendor>
 
     <description><![CDATA[
-      <h3>PHP Array Converter</h3>
-      <p>Converts PHP Arrays and JSON to each other.</p>
+      <p><b>Adds support for mutual conversion between PHP Array and JSON.</b></p>
+      <br/>
+      <p><b>Features</b></p>
       <ul>
-        <li>Replaces the JSON text selected by the primary caret with PHP Array.</li>
-        <li>Replaces the PHP Array text selected by the primary caret with JSON.</li>
+        <li>
+          Available from the right-click menu in the editor.
+          <ul>
+            <li>JSON to PHP Array</li>
+            <li>PHP Array to JSON</li>
+          </ul>
+        </li>
+        <li>
+          Cannot convert if variables or function calls are included.<br/>
+          The literal types allowed are:<br/>
+          <ul>
+            <li>string</li>
+            <li>int</li>
+            <li>float</li>
+            <li>boolean</li>
+            <li>null</li>
+          </ul>
+        </li>
       </ul>
     ]]></description>
 

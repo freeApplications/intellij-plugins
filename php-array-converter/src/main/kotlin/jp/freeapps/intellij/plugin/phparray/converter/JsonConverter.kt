@@ -1,10 +1,8 @@
 package jp.freeapps.intellij.plugin.phparray.converter
 
 import com.intellij.json.psi.*
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiErrorElement
-import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiWhiteSpace
+import com.intellij.psi.*
+import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.refactoring.suggested.endOffset
 import com.intellij.refactoring.suggested.startOffset
 import jp.freeapps.intellij.plugin.phparray.exception.ConvertException
@@ -24,9 +22,12 @@ class JsonConverter(psiFile: JsonFile) {
     private val doubleQuote = "\""
     private val comma = ","
 
+    private enum class ManipulateComma {
+        NONE, APPEND, REMOVE
+    }
+
     // variables
     private val jsonFile = psiFile
-    private val jsonText = psiFile.text
     private var currentIndex = 0
 
     // settings
@@ -51,6 +52,10 @@ class JsonConverter(psiFile: JsonFile) {
 
     private fun toPhpArray(jsonItem: PsiElement): String {
         val builder = StringBuilder(jsonItem.textLength)
+        if (currentIndex < jsonItem.startOffset) {
+            builder.append(replacePreviousSyntax(jsonItem.prevSibling))
+            currentIndex = jsonItem.prevSibling.endOffset
+        }
         jsonItem.children.forEach { child ->
             when (child) {
                 is JsonArray, is JsonObject -> {
@@ -65,24 +70,20 @@ class JsonConverter(psiFile: JsonFile) {
             }
         }
         if (jsonItem is JsonArray || jsonItem is JsonObject) {
-            if (currentIndex < jsonItem.startOffset) {
-                val syntax = jsonText.substring(currentIndex, jsonItem.endOffset)
-                builder.append(replaceSyntax(syntax))
+            if (jsonItem.children.isEmpty()) {
+                builder.append(replaceSyntax(jsonItem.firstChild, jsonItem.lastChild))
             } else {
-                var syntax = jsonText.substring(currentIndex, jsonItem.endOffset)
-                if (appendComma && !syntax.contains(comma)) {
-                    syntax = comma + syntax
+                val syntaxFirstChild = jsonItem.children[jsonItem.children.size - 1].nextSibling
+                if (appendComma) {
+                    builder.append(replaceSyntax(syntaxFirstChild, jsonItem.lastChild, ManipulateComma.APPEND))
+                } else {
+                    builder.append(replaceSyntax(syntaxFirstChild, jsonItem.lastChild, ManipulateComma.REMOVE))
                 }
-                if (!appendComma && syntax.contains(comma)) {
-                    syntax = syntax.replace(comma, "")
-                }
-                builder.append(replaceSyntax(syntax))
             }
             currentIndex = jsonItem.endOffset
         }
         if (jsonItem is PsiFile && currentIndex < jsonItem.endOffset) {
-            val syntax = jsonText.substring(currentIndex)
-            builder.append(replaceSyntax(syntax))
+            builder.append(replacePreviousSyntax(jsonItem.lastChild))
         }
         return builder.toString()
     }
@@ -90,8 +91,8 @@ class JsonConverter(psiFile: JsonFile) {
     private fun toPhpArray(jsonItem: JsonLiteral): String {
         val builder = StringBuilder()
         if (currentIndex < jsonItem.startOffset) {
-            val syntax = jsonText.substring(currentIndex, jsonItem.startOffset)
-            builder.append(replaceSyntax(syntax))
+            builder.append(replacePreviousSyntax(jsonItem.prevSibling))
+            currentIndex = jsonItem.prevSibling.endOffset
         }
         var value = jsonItem.text
         if (jsonItem is JsonStringLiteral) {
@@ -112,6 +113,38 @@ class JsonConverter(psiFile: JsonFile) {
             .replace("\\$doubleQuote", doubleQuote)
     }
 
+    private fun replacePreviousSyntax(latestItem: PsiElement): String {
+        var item = latestItem
+        while (true) {
+            if (item.prevSibling == null || item.prevSibling.endOffset <= currentIndex) break
+            item = item.prevSibling
+        }
+        return replaceSyntax(item, latestItem)
+    }
+
+    private fun replaceSyntax(
+        first: PsiElement,
+        last: PsiElement,
+        manipulateComma: ManipulateComma = ManipulateComma.NONE
+    ): String {
+        val builder = StringBuilder()
+        var hasComma = false
+        var item: PsiElement? = first
+        while (item != null) {
+            val isComma = item is LeafPsiElement && item.elementType.toString() == comma
+            if (manipulateComma == ManipulateComma.NONE || manipulateComma == ManipulateComma.APPEND || !isComma) {
+                builder.append(if (item is PsiComment) item.text else replaceSyntax(item.text))
+            }
+            hasComma = hasComma || isComma
+            if (item == last) break
+            item = item.nextSibling
+        }
+        if (manipulateComma == ManipulateComma.APPEND && !hasComma) {
+            builder.insert(0, comma)
+        }
+        return builder.toString()
+    }
+
     private fun replaceSyntax(syntax: String): String {
         return syntax
             .replace(openBrace, openBraket)
@@ -123,12 +156,12 @@ class JsonConverter(psiFile: JsonFile) {
 
     private fun checkValidType(jsonItem: PsiElement) {
         jsonItem.children.forEach { child ->
-            when (child) {
-                is JsonArray, is JsonObject -> {
+            when {
+                child is JsonArray || child is JsonObject -> {
                     checkValidType(child)
                     return@forEach
                 }
-                !is PsiWhiteSpace -> {
+                child !is PsiWhiteSpace && child !is PsiComment -> {
                     if (jsonItem is JsonFile) {
                         throw ConvertException(jsonItem, "error.rootElement.json", false)
                     }
@@ -141,7 +174,7 @@ class JsonConverter(psiFile: JsonFile) {
                 child is JsonProperty -> {
                     checkValidType(child)
                 }
-                child !is JsonLiteral && child !is PsiWhiteSpace -> {
+                child !is JsonLiteral && child !is PsiWhiteSpace && child !is PsiComment -> {
                     throw ConvertException(child, "error.literalType")
                 }
             }

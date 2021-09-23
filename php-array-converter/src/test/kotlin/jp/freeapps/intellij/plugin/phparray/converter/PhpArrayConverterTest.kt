@@ -111,8 +111,8 @@ internal class PhpArrayConverterTest {
             fun dataProvider(): Iterable<Any> {
                 return listOf(
                     *createPatterns("syntaxError", 3),
-                    *createPatterns("literalTypeError", 2),
-                    *createPatterns("rootElementError", 2),
+                    *createPatterns("literalTypeError", 3),
+                    *createPatterns("rootElementError", 3),
                 )
             }
 

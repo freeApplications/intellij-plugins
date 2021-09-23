@@ -1,0 +1,1 @@
+Literal type error. ( /** PHP Document */ )

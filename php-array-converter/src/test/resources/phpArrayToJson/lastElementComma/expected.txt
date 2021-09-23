@@ -10,7 +10,7 @@
   [], [],
   {
     "key1" : {
-      "key" : 123
+      "key" : 123 // comment,comment,
     },
     "key2" : {
       "key" : [ 456, 789 ]
@@ -18,6 +18,11 @@
     "key3" : {
       "key" : { "key" : "value" }
     }
+    // 'comment' => array(
+    //   'comment',
+    //   'comment',
+    //   'comment',
+    // ),
   }
 ]
 ;

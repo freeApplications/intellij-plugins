@@ -5,5 +5,23 @@ array
   array('int' => 12345, 'float' => 123.45, 'string' => '12345', 'boolean' => true),
     array ( 'array' => array( 12345, 123.45, '12345', false ) ),
       array   (   array(   'key'   =>   'value'   )   )
+, array
+// array('comment')
+  (
+// array('comment')
+      array
+// array('comment')
+      (
+// array('comment')
+          'key'
+// array('comment')
+=>
+// array('comment')
+              'value'
+// array('comment')
+                  )
+// array('comment')
+                      )
+// array('comment')
 )
 ;

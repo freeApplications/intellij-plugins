@@ -1,0 +1,7 @@
+<?php
+
+/** PHP Document */
+array(
+  'key' => 'value'
+)
+;

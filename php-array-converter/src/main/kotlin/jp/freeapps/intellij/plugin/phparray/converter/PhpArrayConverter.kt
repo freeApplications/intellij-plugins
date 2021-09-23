@@ -1,9 +1,7 @@
 package jp.freeapps.intellij.plugin.phparray.converter
 
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiErrorElement
-import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiWhiteSpace
+import com.intellij.psi.*
+import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.psi.util.elementType
 import com.intellij.refactoring.suggested.endOffset
 import com.intellij.refactoring.suggested.startOffset
@@ -17,8 +15,9 @@ class PhpArrayConverter(psiFile: PhpFile) {
     private val closeBraket = "]"
     private val openBrace = "{"
     private val closeBrace = "}"
-    private val openArray = Regex("""array\s*\(""")
-    private val closeArray = ")"
+    private val array = "array"
+    private val openParentheses = "("
+    private val closeParentheses = ")"
     private val colon = ":"
     private val arrow = "=>"
     private val singleQuote = "'"
@@ -48,6 +47,10 @@ class PhpArrayConverter(psiFile: PhpFile) {
             if (child is ArrayCreationExpression) {
                 builder.append(toJson(child))
             } else {
+                if (currentIndex < child.startOffset) {
+                    builder.append(phpText.substring(currentIndex, child.startOffset))
+                    currentIndex = child.startOffset
+                }
                 builder.append(toJson(child))
             }
         }
@@ -64,7 +67,7 @@ class PhpArrayConverter(psiFile: PhpFile) {
         phpItem.children.forEach { child ->
             var syntax = phpText.substring(currentIndex, child.startOffset)
             if (child.equals(phpItem.firstPsiChild)) {
-                syntax = replaceArraySyntax(syntax, isJsonObject)
+                syntax = replacePreviousArraySyntax(child.prevSibling, isJsonObject)
             }
             builder.append(syntax)
             currentIndex = child.startOffset
@@ -87,8 +90,10 @@ class PhpArrayConverter(psiFile: PhpFile) {
                 }
             }
         }
-        val syntax = phpText.substring(currentIndex, phpItem.endOffset)
-        builder.append(replaceArraySyntax(syntax, isJsonObject))
+        val syntaxFirstChild = if (phpItem.children.isNotEmpty()) {
+            phpItem.children[phpItem.children.size - 1].nextSibling
+        } else phpItem.firstChild
+        builder.append(replaceArraySyntax(syntaxFirstChild, phpItem.lastChild, isJsonObject))
         currentIndex = phpItem.endOffset
         return builder.toString()
     }
@@ -115,8 +120,7 @@ class PhpArrayConverter(psiFile: PhpFile) {
     private fun toJsonKey(phpItem: PhpPsiElement): String {
         val builder = StringBuilder()
         if (currentIndex < phpItem.startOffset) {
-            val syntax = phpText.substring(currentIndex, phpItem.startOffset)
-            builder.append(syntax)
+            builder.append(phpText.substring(currentIndex, phpItem.startOffset))
         }
         when (phpItem) {
             is StringLiteralExpression -> {
@@ -132,8 +136,7 @@ class PhpArrayConverter(psiFile: PhpFile) {
     private fun toJsonKey(index: Int, startOffset: Int): String {
         val builder = StringBuilder()
         if (currentIndex < startOffset) {
-            val syntax = phpText.substring(currentIndex, startOffset)
-            builder.append(syntax)
+            builder.append(phpText.substring(currentIndex, startOffset))
         }
         builder.append("$doubleQuote$index$doubleQuote$colon")
         currentIndex = startOffset
@@ -146,8 +149,8 @@ class PhpArrayConverter(psiFile: PhpFile) {
         }
         val builder = StringBuilder()
         if (currentIndex < phpItem.startOffset) {
-            val syntax = phpText.substring(currentIndex, phpItem.startOffset)
-            builder.append(syntax.replace(arrow, colon))
+            val item = if (phpItem.prevSibling == null) phpItem.parent.prevSibling else phpItem.prevSibling
+            builder.append(replacePreviousArraySyntax(item))
             currentIndex = phpItem.startOffset
         }
         when (phpItem) {
@@ -164,12 +167,52 @@ class PhpArrayConverter(psiFile: PhpFile) {
         return builder.toString()
     }
 
+    private fun replacePreviousArraySyntax(latestItem: PsiElement, isJsonObject: Boolean = false): String {
+        var item = latestItem
+        while (true) {
+            if (item.prevSibling == null || item.prevSibling.endOffset <= currentIndex) break
+            item = item.prevSibling
+        }
+        return replaceArraySyntax(item, latestItem, isJsonObject)
+    }
+
+    private fun replaceArraySyntax(first: PsiElement, last: PsiElement, isJsonObject: Boolean): String {
+        val hasArrayComment = fun(array: PsiElement): Boolean {
+            var subItem: PsiElement? = array
+            while (subItem != null) {
+                if (subItem is PsiComment) {
+                    return true
+                }
+                if (subItem == last || (subItem is LeafPsiElement && subItem.elementType.toString() == openParentheses)) break
+                subItem = subItem.nextSibling
+            }
+            return false
+        }
+        val builder = StringBuilder()
+        var skipWhiteSpace = false
+        var item: PsiElement? = first
+        while (item != null) {
+            val text = if (item is PsiComment) item.text else replaceArraySyntax(item.text, isJsonObject)
+            if (!skipWhiteSpace || item !is PsiWhiteSpace) builder.append(text)
+            if (item == last) break
+            if (item is LeafPsiElement && item.elementType.toString() == array) {
+                skipWhiteSpace = !hasArrayComment(item)
+            } else if (skipWhiteSpace && item is LeafPsiElement && item.elementType.toString() == openParentheses) {
+                skipWhiteSpace = false
+            }
+            item = item.nextSibling
+        }
+        return builder.toString()
+    }
+
     private fun replaceArraySyntax(string: String, isJsonObject: Boolean): String {
         return string
-            .replace(openArray, if (isJsonObject) openBrace else openBraket)
+            .replace(array, "")
+            .replace(openParentheses, if (isJsonObject) openBrace else openBraket)
             .replace(openBraket, if (isJsonObject) openBrace else openBraket)
-            .replace(closeArray, if (isJsonObject) closeBrace else closeBraket)
+            .replace(closeParentheses, if (isJsonObject) closeBrace else closeBraket)
             .replace(closeBraket, if (isJsonObject) closeBrace else closeBraket)
+            .replace(arrow, colon)
             .replace(comma, "")
     }
 

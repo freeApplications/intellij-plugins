@@ -6,10 +6,11 @@ array(
   array(
     'element',
   ),
+  // {},
   array(), array(),
   array(
     'key1'=> array(
-      'key'=> 123,
+      'key'=> 123, // comment,comment
     ),
     'key2'=> array(
       'key'=> array( 456, 789, ),
@@ -17,5 +18,10 @@ array(
     'key3'=> array(
       'key'=> array( 'key'=> 'value', ),
     ),
+    // "comment" : [
+    //   "comment",
+    //   "comment",
+    //   "comment"
+    // ]
   ),
 )

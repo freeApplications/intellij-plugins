@@ -1,17 +1,17 @@
 <?php
 
 array(
-    1     => 'a',
-    '1'   => 'b',
-    1.5   => 'c',
-    -1    => 'd',
-    '01'  => 'e',
-    '1.5' => 'f',
-    true  => 'g',
-    false => 'h',
-    ''    => 'i',
-    null  => 'j',
-    'k',
-    2     => 'l',
+    1     => 'a', // 'comment' => 'comment',
+    '1'   => 'b', // 'comment' => 'comment',
+    1.5   => 'c', // 'comment' => 'comment',
+    -1    => 'd', // 'comment' => 'comment',
+    '01'  => 'e', // 'comment' => 'comment',
+    '1.5' => 'f', // 'comment' => 'comment',
+    true  => 'g', // 'comment' => 'comment',
+    false => 'h', // 'comment' => 'comment',
+    ''    => 'i', // 'comment' => 'comment',
+    null  => 'j', // 'comment' => 'comment',
+    'k',          // 'comment' => 'comment',
+    2     => 'l', // 'comment' => 'comment',
 )
 ;

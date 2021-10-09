@@ -1,1 +1,2 @@
 Syntax error. ( Expected: ( )
+Syntax error. ( Expected: ] )

@@ -52,14 +52,9 @@
 
     <actions>
         <!-- Add your actions here -->
-        <group id="jp.freeapps.intellij.plugin.phparray" popup="true">
+        <action id="jp.freeapps.intellij.plugin.phparray.action.ConvertAction"
+                class="jp.freeapps.intellij.plugin.phparray.action.ConvertAction">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
-            <action id="jp.freeapps.intellij.plugin.phparray.action.JsonToPhpArrayAction"
-                    class="jp.freeapps.intellij.plugin.phparray.action.JsonToPhpArrayAction">
-            </action>
-            <action id="jp.freeapps.intellij.plugin.phparray.action.PhpArrayToJsonAction"
-                    class="jp.freeapps.intellij.plugin.phparray.action.PhpArrayToJsonAction">
-            </action>
-        </group>
+        </action>
     </actions>
 </idea-plugin>

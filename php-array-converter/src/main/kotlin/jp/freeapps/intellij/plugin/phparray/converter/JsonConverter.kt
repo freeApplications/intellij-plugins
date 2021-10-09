@@ -1,34 +1,23 @@
 package jp.freeapps.intellij.plugin.phparray.converter
 
+import com.intellij.json.JsonLanguage
 import com.intellij.json.psi.*
+import com.intellij.lang.Language
 import com.intellij.psi.*
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.refactoring.suggested.endOffset
 import com.intellij.refactoring.suggested.startOffset
-import jp.freeapps.intellij.plugin.phparray.exception.ConvertException
+import jp.freeapps.intellij.plugin.phparray.messages.ErrorMessage
 import jp.freeapps.intellij.plugin.phparray.settings.AppSettingsState
 
-class JsonConverter(psiFile: JsonFile) {
+class JsonConverter internal constructor(private var psiFile: PsiFile, private var offset: Int) : Converter() {
     // constants
-    private val openBraket = "["
-    private val closeBraket = "]"
-    private val openBrace = "{"
-    private val closeBrace = "}"
     private val openArray = "array("
     private val closeArray = ")"
-    private val colon = ":"
-    private val arrow = "=>"
-    private val singleQuote = "'"
-    private val doubleQuote = "\""
-    private val comma = ","
 
     private enum class ManipulateComma {
         NONE, APPEND, REMOVE
     }
-
-    // variables
-    private val jsonFile = psiFile
-    private var currentIndex = 0
 
     // settings
     private val useBraket: Boolean
@@ -36,18 +25,30 @@ class JsonConverter(psiFile: JsonFile) {
     private val appendComma: Boolean
     private val quote: String
 
+    // static fields
+    companion object {
+        val language: Language = JsonLanguage.INSTANCE
+        internal const val prefix: String = ""
+        internal const val suffix: String = ""
+    }
+
     init {
         val settings = AppSettingsState.getInstance()
         useBraket = settings.useBraket
         useDoubleQuote = settings.useDoubleQuote
         appendComma = settings.appendComma
         quote = if (useDoubleQuote) doubleQuote else singleQuote
+        offset += prefix.length
+        validateConvertibility()
     }
 
-    fun toPhpArray(): String {
-        checkValidType(jsonFile)
-        currentIndex = 0
-        return toPhpArray(jsonFile)
+    /**
+     * @inheritdoc
+     */
+    override fun doConvert(): String {
+        if (!hasConversionTarget) return ""
+        currentIndex = conversionTarget!!.startOffset
+        return toPhpArray(conversionTarget!!)
     }
 
     private fun toPhpArray(jsonItem: PsiElement): String {
@@ -82,7 +83,7 @@ class JsonConverter(psiFile: JsonFile) {
             }
             currentIndex = jsonItem.endOffset
         }
-        if (jsonItem is PsiFile && currentIndex < jsonItem.endOffset) {
+        if (jsonItem == conversionTarget && currentIndex < jsonItem.endOffset) {
             builder.append(replacePreviousSyntax(jsonItem.lastChild))
         }
         return builder.toString()
@@ -154,30 +155,66 @@ class JsonConverter(psiFile: JsonFile) {
             .replace(colon, arrow)
     }
 
-    private fun checkValidType(jsonItem: PsiElement) {
+    /**
+     * Validate if it can be conversion.
+     */
+    private fun validateConvertibility() {
+        var jsonItem = psiFile.findElementAt(offset)
+        while (jsonItem != null) {
+            if (jsonItem is JsonArray || jsonItem is JsonObject) break
+            jsonItem = jsonItem.parent
+        }
+        if (jsonItem == null) return findJsonElement()
+        conversionTarget = jsonItem
+        conversionTargetText = "${prefix}${jsonItem.text}${suffix}"
+        conversionTargetRange = jsonItem.textRange.shiftLeft(prefix.length).shiftRight(adjustOffset ?: 0)
+        validateConvertibility(jsonItem)
+    }
+
+    private fun validateConvertibility(jsonItem: PsiElement) {
         jsonItem.children.forEach { child ->
             when {
-                child is JsonArray || child is JsonObject -> {
-                    checkValidType(child)
-                    return@forEach
+                child is JsonArray || child is JsonObject || child is JsonProperty -> {
+                    validateConvertibility(child)
                 }
-                child !is PsiWhiteSpace && child !is PsiComment -> {
-                    if (jsonItem is JsonFile) {
-                        throw ConvertException(jsonItem, "error.rootElement.json", false)
+                child is PsiErrorElement -> {
+                    errorMessages += ErrorMessage(
+                        "error.syntax",
+                        child.textRange.shiftLeft(prefix.length).shiftRight(adjustOffset ?: 0),
+                        child.errorDescription
+                    )
+                }
+                child !is JsonLiteral && child !is PsiWhiteSpace && child !is PsiComment -> {
+                    if (child.prevSibling !is PsiErrorElement) {
+                        errorMessages += ErrorMessage(
+                            "error.literalType",
+                            child.textRange.shiftLeft(prefix.length).shiftRight(adjustOffset ?: 0),
+                            child.text
+                        )
                     }
                 }
             }
-            when {
-                child is PsiErrorElement -> {
-                    throw ConvertException(child, "error.syntax")
-                }
-                child is JsonProperty -> {
-                    checkValidType(child)
-                }
-                child !is JsonLiteral && child !is PsiWhiteSpace && child !is PsiComment -> {
-                    throw ConvertException(child, "error.literalType")
-                }
-            }
         }
+    }
+
+    /**
+     * Adjust to find JSON
+     */
+    private var adjustOffset: Int? = null
+
+    private fun findJsonElement() {
+        if (adjustOffset != null) return
+        var jsonItem = psiFile.findElementAt(offset)
+        while (jsonItem != null) {
+            if (jsonItem is LeafPsiElement) {
+                if (arrayOf(openBrace, openBraket).contains(jsonItem.elementType.toString())) break
+            }
+            jsonItem = jsonItem.prevSibling ?: jsonItem.parent
+        }
+        if (jsonItem == null || jsonItem.textOffset == 0) return
+        adjustOffset = jsonItem.textOffset
+        offset -= adjustOffset!!
+        psiFile = createFileFromText(language, psiFile.text.substring(jsonItem.textOffset))
+        validateConvertibility()
     }
 }

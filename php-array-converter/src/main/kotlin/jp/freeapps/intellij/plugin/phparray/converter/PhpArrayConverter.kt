@@ -1,28 +1,18 @@
 package jp.freeapps.intellij.plugin.phparray.converter
 
+import com.intellij.lang.Language
 import com.intellij.psi.*
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.psi.util.elementType
 import com.intellij.refactoring.suggested.endOffset
 import com.intellij.refactoring.suggested.startOffset
-import com.jetbrains.php.lang.psi.PhpFile
+import com.jetbrains.php.lang.PhpLanguage
 import com.jetbrains.php.lang.psi.elements.*
-import jp.freeapps.intellij.plugin.phparray.exception.ConvertException
+import jp.freeapps.intellij.plugin.phparray.messages.ErrorMessage
 
-class PhpArrayConverter(psiFile: PhpFile) {
+class PhpArrayConverter internal constructor(private val psiFile: PsiFile, private var offset: Int) : Converter() {
     // constants
-    private val openBraket = "["
-    private val closeBraket = "]"
-    private val openBrace = "{"
-    private val closeBrace = "}"
     private val array = "array"
-    private val openParentheses = "("
-    private val closeParentheses = ")"
-    private val colon = ":"
-    private val arrow = "=>"
-    private val singleQuote = "'"
-    private val doubleQuote = "\""
-    private val comma = ","
     private val arrayKey = "Array key"
     private val arrayValue = "Array value"
     private val arrayElement = arrayOf(arrayKey, arrayValue)
@@ -30,34 +20,25 @@ class PhpArrayConverter(psiFile: PhpFile) {
     private val integer = "integer"
     private val constantReferenceType = arrayOf("bool", "false", "null")
 
-    // variables
-    private val phpFile = psiFile
-    private val phpText = psiFile.text
-    private var currentIndex = 0
-
-    fun toJson(): String {
-        checkValidType(phpFile)
-        currentIndex = 0
-        return toJson(phpFile)
+    // static fields
+    companion object {
+        internal val language: Language = PhpLanguage.INSTANCE
+        internal const val prefix: String = "<?php\n"
+        internal const val suffix: String = "\n"
     }
 
-    private fun toJson(phpItem: PsiElement): String {
-        val builder = StringBuilder(phpItem.textLength)
-        phpItem.children.forEach { child ->
-            if (child is ArrayCreationExpression) {
-                builder.append(toJson(child))
-            } else {
-                if (currentIndex < child.startOffset) {
-                    builder.append(phpText.substring(currentIndex, child.startOffset))
-                    currentIndex = child.startOffset
-                }
-                builder.append(toJson(child))
-            }
-        }
-        if (phpItem is PsiFile && currentIndex < phpItem.endOffset) {
-            builder.append(phpText.substring(currentIndex))
-        }
-        return builder.toString()
+    init {
+        offset += prefix.length
+        validateConvertibility()
+    }
+
+    /**
+     * @inheritdoc
+     */
+    override fun doConvert(): String {
+        if (!hasConversionTarget) return ""
+        currentIndex = conversionTarget!!.startOffset
+        return toJson(conversionTarget as ArrayCreationExpression)
     }
 
     private fun toJson(phpItem: ArrayCreationExpression): String {
@@ -65,7 +46,7 @@ class PhpArrayConverter(psiFile: PhpFile) {
         val builder = StringBuilder(phpItem.textLength)
         var index = 0
         phpItem.children.forEach { child ->
-            var syntax = phpText.substring(currentIndex, child.startOffset)
+            var syntax = psiFile.text.substring(currentIndex, child.startOffset)
             if (child.equals(phpItem.firstPsiChild)) {
                 syntax = replacePreviousArraySyntax(child.prevSibling, isJsonObject)
             }
@@ -120,7 +101,7 @@ class PhpArrayConverter(psiFile: PhpFile) {
     private fun toJsonKey(phpItem: PhpPsiElement): String {
         val builder = StringBuilder()
         if (currentIndex < phpItem.startOffset) {
-            builder.append(phpText.substring(currentIndex, phpItem.startOffset))
+            builder.append(psiFile.text.substring(currentIndex, phpItem.startOffset))
         }
         when (phpItem) {
             is StringLiteralExpression -> {
@@ -136,7 +117,7 @@ class PhpArrayConverter(psiFile: PhpFile) {
     private fun toJsonKey(index: Int, startOffset: Int): String {
         val builder = StringBuilder()
         if (currentIndex < startOffset) {
-            builder.append(phpText.substring(currentIndex, startOffset))
+            builder.append(psiFile.text.substring(currentIndex, startOffset))
         }
         builder.append("$doubleQuote$index$doubleQuote$colon")
         currentIndex = startOffset
@@ -225,37 +206,54 @@ class PhpArrayConverter(psiFile: PhpFile) {
         return string
     }
 
-    private fun checkValidType(phpItem: PsiElement) {
+    /**
+     * Validate if it can be conversion.
+     */
+    private fun validateConvertibility() {
+        var phpItem = psiFile.findElementAt(offset)
+        while (phpItem != null) {
+            if (phpItem is ArrayCreationExpression) break
+            phpItem = phpItem.parent
+        }
+        if (phpItem == null) return
+        conversionTarget = phpItem
+        conversionTargetText = "$prefix${phpItem.text}$suffix"
+        conversionTargetRange = phpItem.textRange.shiftLeft(prefix.length)
+        validateConvertibility(phpItem)
+    }
+
+    private fun validateConvertibility(phpItem: PsiElement) {
         phpItem.children.forEach { child ->
-            when (child) {
-                is Statement, is ArrayCreationExpression -> {
-                    checkValidType(child)
-                    return@forEach
-                }
-                else -> {
-                    if (phpItem is Statement) {
-                        throw ConvertException(phpItem, "error.rootElement.phpArray", false)
-                    }
-                }
-            }
             when {
-                child is PsiErrorElement -> {
-                    throw ConvertException(child, "error.syntax")
-                }
-                child is ArrayHashElement || child is UnaryExpression -> {
-                    checkValidType(child)
+                child is Statement || child is ArrayCreationExpression || child is ArrayHashElement || child is UnaryExpression -> {
+                    validateConvertibility(child)
                 }
                 child is PhpPsiElement && arrayElement.contains(child.elementType.toString()) -> {
-                    checkValidType(child)
+                    validateConvertibility(child)
+                }
+                child is PsiErrorElement -> {
+                    errorMessages += ErrorMessage(
+                        "error.syntax",
+                        child.textRange.shiftLeft(prefix.length),
+                        child.errorDescription
+                    )
                 }
                 child is ConstantReference -> {
                     if (!constantReferenceType.contains(child.type.toString())) {
-                        throw ConvertException(child, "error.literalType")
+                        errorMessages += ErrorMessage(
+                            "error.literalType",
+                            child.textRange.shiftLeft(prefix.length),
+                            child.text
+                        )
                     }
                 }
                 child !is StringLiteralExpression && child !is PsiWhiteSpace -> {
                     if (child !is PhpPsiElement || child.elementType.toString() != number) {
-                        throw ConvertException(child, "error.literalType")
+                        errorMessages += ErrorMessage(
+                            "error.literalType",
+                            child.textRange.shiftLeft(prefix.length),
+                            child.text
+                        )
                     }
                 }
             }

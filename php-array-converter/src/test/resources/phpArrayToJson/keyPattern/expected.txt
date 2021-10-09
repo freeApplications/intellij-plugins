@@ -1,5 +1,3 @@
-<?php
-
 {
     "1"     : "a", // 'comment' => 'comment',
     "1"   : "b", // 'comment' => 'comment',
@@ -14,4 +12,3 @@
     "2":"k",          // 'comment' => 'comment',
     "2"     : "l" // 'comment' => 'comment',
 }
-;

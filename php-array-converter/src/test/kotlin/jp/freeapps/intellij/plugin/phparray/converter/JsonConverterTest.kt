@@ -1,10 +1,8 @@
 package jp.freeapps.intellij.plugin.phparray.converter
 
-import com.intellij.json.psi.JsonFile
 import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase
 import io.mockk.every
 import io.mockk.mockkObject
-import jp.freeapps.intellij.plugin.phparray.exception.ConvertException
 import jp.freeapps.intellij.plugin.phparray.settings.AppSettingsState
 import org.junit.Rule
 import org.junit.Test
@@ -38,12 +36,13 @@ internal class JsonConverterTest {
             mockkObject(AppSettingsState)
             every { AppSettingsState.getInstance() } returns settings
             val psiFile = myFixture.configureByText("target.json", argument)
-            val jsonConverter = JsonConverter(psiFile as JsonFile)
+            val jsonConverter = JsonConverter(psiFile, 1)
 
             // when:
-            val actual = jsonConverter.toPhpArray()
+            val actual = jsonConverter.doConvert()
 
             // then:
+            assertTrue(jsonConverter.hasConversionTarget)
             assertEquals(expected, actual)
         }
 
@@ -116,12 +115,21 @@ internal class JsonConverterTest {
         fun test() {
             // setup:
             val psiFile = myFixture.configureByText("target.json", argument)
-            val jsonConverter = JsonConverter(psiFile as JsonFile)
 
-            // expect:
-            thrown!!.expect(ConvertException::class.java)
-            thrown!!.expectMessage(expected)
-            jsonConverter.toPhpArray()
+            // then
+            val jsonConverter = JsonConverter(psiFile, 1)
+
+            // when:
+            if (title.contains("rootElementError")) {
+                assertFalse(jsonConverter.hasConversionTarget)
+                assertEmpty(jsonConverter.errorMessages)
+            } else {
+                assertTrue(jsonConverter.hasConversionTarget)
+                assertEquals(expected.split("\n").size, jsonConverter.errorMessages.size)
+                for ((index, actual) in jsonConverter.errorMessages.withIndex()) {
+                    assertEquals(expected.split("\n")[index], actual.message)
+                }
+            }
         }
 
         companion object {

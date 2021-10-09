@@ -1,8 +1,6 @@
 package jp.freeapps.intellij.plugin.phparray.converter
 
 import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase
-import com.jetbrains.php.lang.psi.PhpFile
-import jp.freeapps.intellij.plugin.phparray.exception.ConvertException
 import org.junit.Rule
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -29,10 +27,10 @@ internal class PhpArrayConverterTest {
         @Test
         fun test() {
             val psiFile = myFixture.configureByText("target.php", argument)
-            val phpArrayConverter = PhpArrayConverter(psiFile as PhpFile)
+            val phpArrayConverter = PhpArrayConverter(psiFile, 1)
 
             // when:
-            val actual = phpArrayConverter.toJson()
+            val actual = phpArrayConverter.doConvert()
 
             // then:
             assertEquals(expected, actual)
@@ -97,12 +95,21 @@ internal class PhpArrayConverterTest {
         fun test() {
             // setup:
             val psiFile = myFixture.configureByText("target.php", argument)
-            val phpArrayConverter = PhpArrayConverter(psiFile as PhpFile)
 
-            // expect:
-            thrown!!.expect(ConvertException::class.java)
-            thrown!!.expectMessage(expected)
-            phpArrayConverter.toJson()
+            // then:
+            val phpArrayConverter = PhpArrayConverter(psiFile, 1)
+
+            // when:
+            if (title.contains("rootElementError")) {
+                assertFalse(phpArrayConverter.hasConversionTarget)
+                assertEmpty(phpArrayConverter.errorMessages)
+            } else {
+                assertTrue(phpArrayConverter.hasConversionTarget)
+                assertEquals(expected.split("\n").size, phpArrayConverter.errorMessages.size)
+                for ((index, actual) in phpArrayConverter.errorMessages.withIndex()) {
+                    assertEquals(expected.split("\n")[index], actual.message)
+                }
+            }
         }
 
         companion object {

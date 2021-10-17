@@ -7,6 +7,7 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
+import com.intellij.refactoring.suggested.startOffset
 import jp.freeapps.intellij.plugin.phparray.messages.ErrorMessage
 
 abstract class Converter internal constructor() {
@@ -36,6 +37,24 @@ abstract class Converter internal constructor() {
         protected set
     var errorMessages = arrayOf<ErrorMessage>()
         protected set
+        get() = field.sortedWith { o1, o2 ->
+            if (o1.startOffset != o2.startOffset) o1.startOffset - o2.startOffset else o1.endOffset - o2.endOffset
+        }.toTypedArray()
+    val language: Language?
+        get() = conversionTarget?.language
+    val conversionMessageKey: String
+        get() = when (this) {
+            is JsonConverter -> "toolwindow.button.jsonToPhpArray"
+            is PhpArrayConverter -> "toolwindow.button.phpArrayToJson"
+            else -> "toolwindow.button.default"
+        }
+    val indent: String
+        get() = if (conversionTarget != null && conversionTarget!!.text.contains("\n")) {
+            val beforeStartOffset = conversionTarget!!.containingFile.text.substring(0, conversionTarget!!.startOffset)
+            val lastLine = beforeStartOffset.substring(beforeStartOffset.lastIndexOf("\n") + 1)
+            val match = Regex("""^([\t ]*).*""").find(lastLine)
+            (if (match != null && match.groups.size > 1) match.groups[1]?.value else null) ?: ""
+        } else ""
 
     /**
      * Execute convert
@@ -73,8 +92,13 @@ abstract class Converter internal constructor() {
             }
 
             // Return what cannot be conversion.
-            if (phpArrayConverter.errorMessages.isNotEmpty()) return phpArrayConverter
-            if (jsonConverter.errorMessages.isNotEmpty()) return jsonConverter
+            if (phpArrayConverter.hasConversionTarget && jsonConverter.hasConversionTarget) {
+                return if (phpArrayConverter.conversionTargetRange!!.startOffset < jsonConverter.conversionTargetRange!!.startOffset) {
+                    jsonConverter
+                } else phpArrayConverter
+            }
+            if (phpArrayConverter.hasConversionTarget) return phpArrayConverter
+            if (jsonConverter.hasConversionTarget) return jsonConverter
             return object : Converter() {
                 override fun doConvert(): String {
                     return ""

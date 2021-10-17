@@ -10,4 +10,8 @@ class ErrorMessage(messageKey: String, textRange: TextRange, private val additio
     val endOffset: Int = textRange.endOffset
     val message: String = resourceBundle.getString(messageKey)
         get() = if (additionalText == null) field else "$field ( $additionalText )"
+
+    override fun toString(): String {
+        return message
+    }
 }

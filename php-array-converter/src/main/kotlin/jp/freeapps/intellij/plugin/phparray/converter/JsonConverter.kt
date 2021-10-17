@@ -7,10 +7,11 @@ import com.intellij.psi.*
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.refactoring.suggested.endOffset
 import com.intellij.refactoring.suggested.startOffset
+import com.jetbrains.rd.util.remove
 import jp.freeapps.intellij.plugin.phparray.messages.ErrorMessage
 import jp.freeapps.intellij.plugin.phparray.settings.AppSettingsState
 
-class JsonConverter internal constructor(private var psiFile: PsiFile, private var offset: Int) : Converter() {
+class JsonConverter internal constructor(private val psiFile: PsiFile, private var offset: Int) : Converter() {
     // constants
     private val openArray = "array("
     private val closeArray = ")"
@@ -159,15 +160,16 @@ class JsonConverter internal constructor(private var psiFile: PsiFile, private v
      * Validate if it can be conversion.
      */
     private fun validateConvertibility() {
-        var jsonItem = psiFile.findElementAt(offset)
+        findJson()
+        var jsonItem = (adjustPsiFile ?: psiFile).findElementAt(adjustOffset ?: offset)
         while (jsonItem != null) {
             if (jsonItem is JsonArray || jsonItem is JsonObject) break
             jsonItem = jsonItem.parent
         }
-        if (jsonItem == null) return findJsonElement()
+        if (jsonItem == null) return
         conversionTarget = jsonItem
-        conversionTargetText = "${prefix}${jsonItem.text}${suffix}"
-        conversionTargetRange = jsonItem.textRange.shiftLeft(prefix.length).shiftRight(adjustOffset ?: 0)
+        conversionTargetText = "$prefix$indent${jsonItem.text}$suffix"
+        conversionTargetRange = jsonItem.textRange.shiftLeft(prefix.length)
         validateConvertibility(jsonItem)
     }
 
@@ -180,15 +182,15 @@ class JsonConverter internal constructor(private var psiFile: PsiFile, private v
                 child is PsiErrorElement -> {
                     errorMessages += ErrorMessage(
                         "error.syntax",
-                        child.textRange.shiftLeft(prefix.length).shiftRight(adjustOffset ?: 0),
+                        child.textRange.shiftLeft(prefix.length),
                         child.errorDescription
                     )
                 }
                 child !is JsonLiteral && child !is PsiWhiteSpace && child !is PsiComment -> {
-                    if (child.prevSibling !is PsiErrorElement) {
+                    if (child is JsonReferenceExpression && (child.prevSibling !is PsiErrorElement && child.nextSibling !is PsiErrorElement)) {
                         errorMessages += ErrorMessage(
                             "error.literalType",
-                            child.textRange.shiftLeft(prefix.length).shiftRight(adjustOffset ?: 0),
+                            child.textRange.shiftLeft(prefix.length),
                             child.text
                         )
                     }
@@ -201,20 +203,57 @@ class JsonConverter internal constructor(private var psiFile: PsiFile, private v
      * Adjust to find JSON
      */
     private var adjustOffset: Int? = null
+    private var adjustPsiFile: PsiFile? = null
 
-    private fun findJsonElement() {
-        if (adjustOffset != null) return
-        var jsonItem = psiFile.findElementAt(offset)
-        while (jsonItem != null) {
+    private fun findJson() {
+        if (adjustOffset == prefix.length) return
+        var offset = this.offset
+        var closeArray = arrayOf<String>()
+        while (offset >= prefix.length) {
+            val jsonItem = psiFile.findElementAt(offset)
             if (jsonItem is LeafPsiElement) {
-                if (arrayOf(openBrace, openBraket).contains(jsonItem.elementType.toString())) break
+                when (jsonItem.elementType.toString()) {
+                    closeBrace -> {
+                        if (offset == this.offset
+                            && jsonItem.parent is JsonObject
+                            && jsonItem.endOffset == jsonItem.parent.endOffset
+                        ) break
+                        if (offset != this.offset) closeArray += closeBrace
+                    }
+                    closeBraket -> {
+                        if (offset == this.offset
+                            && jsonItem.parent is JsonArray
+                            && jsonItem.endOffset == jsonItem.parent.endOffset
+                        ) break
+                        closeArray += closeBraket
+                    }
+                    openBrace -> {
+                        if (closeArray.contains(closeBrace)) {
+                            closeArray = closeArray.remove(closeBrace)
+                        } else break
+                    }
+                    openBraket -> {
+                        if (closeArray.contains(closeBraket)) {
+                            closeArray = closeArray.remove(closeBraket)
+                        } else break
+                    }
+                }
             }
-            jsonItem = jsonItem.prevSibling ?: jsonItem.parent
+            offset = if (jsonItem != null) jsonItem.startOffset - 1 else offset - 1
         }
-        if (jsonItem == null || jsonItem.textOffset == 0) return
-        adjustOffset = jsonItem.textOffset
-        offset -= adjustOffset!!
-        psiFile = createFileFromText(language, psiFile.text.substring(jsonItem.textOffset))
-        validateConvertibility()
+        if (offset < prefix.length) return
+        adjustOffset = offset
+        val jsonItem = psiFile.findElementAt(offset)
+        if (jsonItem != null && (jsonItem.parent is JsonObject || jsonItem.parent is JsonArray)) return
+        // parentがJSONじゃない場合、offset以前を任意の文字+インデントで埋めたadjustPsiFileを作成する
+        // ※補足：前半にエラーがあるとPSIがJSONと判断してくれない場合があるので、前半部分を亡き者にしつつoffsetは整合性を保たせる
+        val beforeOffset = psiFile.text.substring(0, offset)
+        val lastLine = beforeOffset.substring(beforeOffset.lastIndexOf("\n") + 1)
+        val match = Regex("""^([\t ]*).*""").find(lastLine)
+        val indent = (if (match != null && match.groups.size > 1) match.groups[1]?.value else null) ?: ""
+        adjustPsiFile = createFileFromText(
+            JsonConverter.language,
+            prefix + "\n".repeat(offset - indent.length - prefix.length) + indent + psiFile.text.substring(offset)
+        )
     }
 }

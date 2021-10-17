@@ -1,11 +1,11 @@
 plugins {
     id 'java'
-    id 'org.jetbrains.intellij' version '1.1.4'
-    id 'org.jetbrains.kotlin.jvm' version '1.5.21'
+    id 'org.jetbrains.intellij' version '1.2.0'
+    id 'org.jetbrains.kotlin.jvm' version '1.5.31'
 }
 
 group 'io.github.freeApplications'
-version '1.1.0'
+version '1.2.0'
 
 sourceCompatibility = 11
 
@@ -14,9 +14,9 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.5.21'
-    testImplementation 'org.jetbrains.kotlin:kotlin-test:1.5.21'
-    testImplementation 'org.jetbrains.kotlin:kotlin-test-junit:1.5.21'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.5.31'
+    testImplementation 'org.jetbrains.kotlin:kotlin-test:1.5.31'
+    testImplementation 'org.jetbrains.kotlin:kotlin-test-junit:1.5.31'
     testImplementation 'io.mockk:mockk:1.12.0'
 }
 
@@ -31,6 +31,7 @@ intellij {
 patchPluginXml {
     changeNotes = """
       <ul>
+        <li>v1.2.0 : ➕ Using tool window</li>
         <li>v1.1.0 : ➕ Automatically detects conversion target</li>
       </ul>
     """

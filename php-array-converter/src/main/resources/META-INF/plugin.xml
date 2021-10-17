@@ -9,10 +9,21 @@
       <p><b>Features</b></p>
       <ul>
         <li>
-          Available from the right-click menu in the editor.
+          First, open the tool window.
           <ul>
-            <li>JSON to PHP Array</li>
+            <li>View > Tool Windows > PHP Array Converter</li>
+            <li>Right-click menu in the editor > PHP Array Converter</li>
+          </ul>
+        </li>
+        <li>
+          If there is a PHP Array or JSON around the editor cursor,<br/>
+          it will be displayed in the tool window.
+        </li>
+        <li>
+          Click the convert button in the tool window.
+          <ul>
             <li>PHP Array to JSON</li>
+            <li>JSON to PHP Array</li>
           </ul>
         </li>
         <li>
@@ -48,13 +59,20 @@
                                  displayName="PHP Array Converter"/>
         <applicationService serviceImplementation="jp.freeapps.intellij.plugin.phparray.settings.AppSettingsState"/>
         <notificationGroup id="Conversion Notification" displayType="BALLOON"/>
+        <toolWindow id="PHP Array Converter" secondary="true" icon="AllIcons.Json.Array" anchor="right"
+                    factoryClass="jp.freeapps.intellij.plugin.phparray.toolwindow.ToolWindowFactory"/>
     </extensions>
 
     <actions>
         <!-- Add your actions here -->
-        <action id="jp.freeapps.intellij.plugin.phparray.action.ConvertAction"
-                class="jp.freeapps.intellij.plugin.phparray.action.ConvertAction">
+        <action id="jp.freeapps.intellij.plugin.phparray.action.ShowToolWindowAction"
+                class="jp.freeapps.intellij.plugin.phparray.action.ShowToolWindowAction">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
     </actions>
+
+    <projectListeners>
+        <listener class="jp.freeapps.intellij.plugin.phparray.toolwindow.ToolWindowListener"
+                  topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener"/>
+    </projectListeners>
 </idea-plugin>

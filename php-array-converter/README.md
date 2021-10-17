@@ -5,7 +5,16 @@
 
 ## Features
 
-- Available from the right-click menu in the editor.
+- First, open the tool window.
+  - View > Tool Windows > PHP Array Converter
+  - Right-click menu in the editor > PHP Array Converter
+
+
+- If there is a PHP Array or JSON around the editor cursor,  
+  it will be displayed in the tool window.
+
+
+- Click the convert button in the tool window.
   - JSON to PHP Array
   - PHP Array to JSON
 

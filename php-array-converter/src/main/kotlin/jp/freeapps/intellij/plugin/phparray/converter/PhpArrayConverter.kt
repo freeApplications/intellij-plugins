@@ -8,6 +8,7 @@ import com.intellij.refactoring.suggested.endOffset
 import com.intellij.refactoring.suggested.startOffset
 import com.jetbrains.php.lang.PhpLanguage
 import com.jetbrains.php.lang.psi.elements.*
+import com.jetbrains.rd.util.remove
 import jp.freeapps.intellij.plugin.phparray.messages.ErrorMessage
 
 class PhpArrayConverter internal constructor(private val psiFile: PsiFile, private var offset: Int) : Converter() {
@@ -210,14 +211,15 @@ class PhpArrayConverter internal constructor(private val psiFile: PsiFile, priva
      * Validate if it can be conversion.
      */
     private fun validateConvertibility() {
-        var phpItem = psiFile.findElementAt(offset)
+        findPhpArray()
+        var phpItem = psiFile.findElementAt(adjustOffset ?: offset)
         while (phpItem != null) {
             if (phpItem is ArrayCreationExpression) break
             phpItem = phpItem.parent
         }
         if (phpItem == null) return
         conversionTarget = phpItem
-        conversionTargetText = "$prefix${phpItem.text}$suffix"
+        conversionTargetText = "$prefix$indent${phpItem.text}$suffix"
         conversionTargetRange = phpItem.textRange.shiftLeft(prefix.length)
         validateConvertibility(phpItem)
     }
@@ -258,5 +260,43 @@ class PhpArrayConverter internal constructor(private val psiFile: PsiFile, priva
                 }
             }
         }
+    }
+
+    /**
+     * Adjust to find PHP Array
+     */
+    private var adjustOffset: Int? = null
+
+    private fun findPhpArray() {
+        if (adjustOffset == prefix.length) return
+        var offset = this.offset
+        var closeArray = arrayOf<String>()
+        while (offset >= prefix.length) {
+            val phpItem = psiFile.findElementAt(offset)
+            if (phpItem is LeafPsiElement) {
+                when (phpItem.elementType.toString()) {
+                    closeBraket, closeParentheses -> {
+                        if (offset == this.offset
+                            && phpItem.parent is ArrayCreationExpression
+                            && phpItem.endOffset == phpItem.parent.endOffset
+                        ) break
+                        if (offset != this.offset) closeArray += phpItem.elementType.toString()
+                    }
+                    openBraket -> {
+                        if (closeArray.contains(closeBraket)) {
+                            closeArray = closeArray.remove(closeBraket)
+                        } else break
+                    }
+                    array -> {
+                        if (closeArray.contains(closeParentheses)) {
+                            closeArray = closeArray.remove(closeParentheses)
+                        } else break
+                    }
+                }
+            }
+            offset = if (phpItem != null) phpItem.startOffset - 1 else offset - 1
+        }
+        if (offset < prefix.length) return
+        adjustOffset = offset
     }
 }

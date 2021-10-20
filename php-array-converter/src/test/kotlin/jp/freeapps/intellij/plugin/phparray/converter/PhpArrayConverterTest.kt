@@ -1,6 +1,6 @@
 package jp.freeapps.intellij.plugin.phparray.converter
 
-import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase
+import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import org.junit.Rule
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -14,7 +14,7 @@ import java.io.File
 @RunWith(Enclosed::class)
 internal class PhpArrayConverterTest {
     @RunWith(Parameterized::class)
-    internal class ToJsonTest : LightJavaCodeInsightFixtureTestCase() {
+    internal class ToJsonTest : BasePlatformTestCase() {
         @Parameter
         lateinit var title: String
 
@@ -78,7 +78,7 @@ internal class PhpArrayConverterTest {
     }
 
     @RunWith(Parameterized::class)
-    internal class CheckValidTypeTest : LightJavaCodeInsightFixtureTestCase() {
+    internal class CheckValidTypeTest : BasePlatformTestCase() {
         @Parameter
         lateinit var title: String
 

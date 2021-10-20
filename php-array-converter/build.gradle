@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'io.github.freeApplications'
-version '1.2.0'
+version '1.2.1'
 
 sourceCompatibility = 11
 
@@ -25,14 +25,13 @@ intellij {
     version = '2021.1'
     updateSinceUntilBuild = false
     type = 'IU'
-    plugins = ['com.jetbrains.php:211.6693.111', 'com.intellij.java']
+    plugins = ['com.jetbrains.php:211.6693.111']
 }
 
 patchPluginXml {
     changeNotes = """
       <ul>
-        <li>v1.2.0 : ➕ Using tool window</li>
-        <li>v1.1.0 : ➕ Automatically detects conversion target</li>
+        <li>v1.2.1 : ✨ Make it available to PHPStorm</li>
       </ul>
     """
 }

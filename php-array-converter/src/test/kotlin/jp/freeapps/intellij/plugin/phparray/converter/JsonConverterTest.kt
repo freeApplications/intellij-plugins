@@ -1,6 +1,6 @@
 package jp.freeapps.intellij.plugin.phparray.converter
 
-import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase
+import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.every
 import io.mockk.mockkObject
 import jp.freeapps.intellij.plugin.phparray.settings.AppSettingsState
@@ -17,7 +17,7 @@ import java.io.File
 @RunWith(Enclosed::class)
 internal class JsonConverterTest {
     @RunWith(Parameterized::class)
-    internal class ToPhpArrayTest : LightJavaCodeInsightFixtureTestCase() {
+    internal class ToPhpArrayTest : BasePlatformTestCase() {
         @Parameter
         lateinit var title: String
 
@@ -98,7 +98,7 @@ internal class JsonConverterTest {
     }
 
     @RunWith(Parameterized::class)
-    internal class CheckValidTypeTest : LightJavaCodeInsightFixtureTestCase() {
+    internal class CheckValidTypeTest : BasePlatformTestCase() {
         @Parameter
         lateinit var title: String
 

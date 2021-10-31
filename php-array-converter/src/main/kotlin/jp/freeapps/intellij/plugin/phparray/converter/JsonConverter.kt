@@ -21,10 +21,11 @@ class JsonConverter internal constructor(private val psiFile: PsiFile, private v
     }
 
     // settings
-    private val useBraket: Boolean
-    private val useDoubleQuote: Boolean
-    private val appendComma: Boolean
-    private val quote: String
+    private var settings = AppSettingsState.getInstance()
+    private val useBraket get() = settings.useBraket
+    private val useDoubleQuote get() = settings.useDoubleQuote
+    private val appendComma get() = settings.appendComma
+    private val quote get() = if (useDoubleQuote) doubleQuote else singleQuote
 
     // static fields
     companion object {
@@ -34,11 +35,6 @@ class JsonConverter internal constructor(private val psiFile: PsiFile, private v
     }
 
     init {
-        val settings = AppSettingsState.getInstance()
-        useBraket = settings.useBraket
-        useDoubleQuote = settings.useDoubleQuote
-        appendComma = settings.appendComma
-        quote = if (useDoubleQuote) doubleQuote else singleQuote
         offset += prefix.length
         validateConvertibility()
     }
@@ -48,6 +44,7 @@ class JsonConverter internal constructor(private val psiFile: PsiFile, private v
      */
     override fun doConvert(): String {
         if (!hasConversionTarget) return ""
+        settings = AppSettingsState.getInstance()
         currentIndex = conversionTarget!!.startOffset
         return toPhpArray(conversionTarget!!)
     }

@@ -3,6 +3,7 @@ package jp.freeapps.intellij.plugin.phparray.toolwindow
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.codeInsight.hint.HintManager
 import com.intellij.codeInsight.hint.HintManagerImpl
+import com.intellij.icons.AllIcons
 import com.intellij.lang.Language
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
@@ -16,6 +17,7 @@ import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileTypes.PlainTextLanguage
+import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.ui.LanguageTextField
@@ -26,6 +28,7 @@ import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import jp.freeapps.intellij.plugin.phparray.converter.Converter
 import jp.freeapps.intellij.plugin.phparray.messages.ErrorMessage
+import jp.freeapps.intellij.plugin.phparray.settings.AppSettingsConfigurable
 import jp.freeapps.intellij.plugin.phparray.settings.AppSettingsState
 import java.awt.*
 import java.awt.GridBagConstraints.*
@@ -62,13 +65,15 @@ class ToolWindowComponent(private val project: Project) : JPanel(GridBagLayout()
         // Add contents
         createConversionTarget(converter)
         val insets = JBUI.insets(0)
-        var constraints = GridBagConstraints(0, 0, 1, 1, 1.0, 1.0, WEST, BOTH, insets, 0, 0)
+        var constraints = GridBagConstraints(0, 0, 2, 1, 1.0, 1.0, WEST, BOTH, insets, 0, 0)
         if (converter.errorMessages.isEmpty()) {
             border = lineBorder
             add(conversionTarget!!, constraints)
             if (converter.hasConversionTarget) {
-                constraints = GridBagConstraints(0, 1, 1, 1, 0.0, 0.0, CENTER, NONE, insets, 0, 0)
+                constraints = GridBagConstraints(0, 1, 1, 1, 1.0, 0.0, CENTER, NONE, insets, 0, 0)
                 add(createConversionButton(converter), constraints)
+                constraints = GridBagConstraints(1, 1, 1, 1, 1.0, 0.0, CENTER, NONE, insets, 0, 0)
+                add(createSettingsButton(), constraints)
             }
         } else {
             border = null
@@ -135,6 +140,7 @@ class ToolWindowComponent(private val project: Project) : JPanel(GridBagLayout()
 
     private fun createConversionButton(converter: Converter): JButton {
         val conversionButton = JButton(resourceBundle.getString(converter.conversionMessageKey))
+        rootPane.defaultButton = conversionButton
         conversionButton.font = conversionButton.font.deriveFont(Font.BOLD)
         conversionButton.addActionListener {
             val conversionResult = converter.doConvert()
@@ -161,6 +167,14 @@ class ToolWindowComponent(private val project: Project) : JPanel(GridBagLayout()
             editor!!.contentComponent.requestFocus()
         }
         return conversionButton
+    }
+
+    private fun createSettingsButton(): JButton {
+        val settingsButton = JButton(resourceBundle.getString("toolwindow.button.settings"), AllIcons.General.Settings)
+        settingsButton.addActionListener {
+            ShowSettingsUtil.getInstance().showSettingsDialog(project, AppSettingsConfigurable::class.java)
+        }
+        return settingsButton
     }
 
     private class EditorTextField(

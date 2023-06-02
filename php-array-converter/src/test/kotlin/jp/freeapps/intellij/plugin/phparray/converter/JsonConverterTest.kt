@@ -4,10 +4,8 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.every
 import io.mockk.mockkObject
 import jp.freeapps.intellij.plugin.phparray.settings.AppSettingsState
-import org.junit.Rule
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
-import org.junit.rules.ExpectedException
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameter
@@ -107,9 +105,6 @@ internal class JsonConverterTest {
 
         @Parameter(2)
         lateinit var expected: String
-
-        @get:Rule
-        val thrown: ExpectedException? = ExpectedException.none()
 
         @Test
         fun test() {

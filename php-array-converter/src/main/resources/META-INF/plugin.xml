@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>io.github.freeApplications.intellij-plugins</id>
     <name>PHP Array Converter</name>
-    <vendor url="https://github.com/freeApplications">freeApplications</vendor>
+    <vendor url="https://github.com/gasu-dev">gasu-dev</vendor>
 
     <description><![CDATA[
       <p><b>Adds support for mutual conversion between PHP Array and JSON.</b></p>
@@ -46,7 +46,7 @@
     <depends>com.intellij.modules.platform</depends>
 
     <!-- Minimum and maximum build of IDE compatible with the plugin -->
-    <idea-version since-build="211"/>
+    <idea-version since-build="211" until-build="231.*"/>
 
     <resource-bundle>messages.PluginBundle</resource-bundle>
 

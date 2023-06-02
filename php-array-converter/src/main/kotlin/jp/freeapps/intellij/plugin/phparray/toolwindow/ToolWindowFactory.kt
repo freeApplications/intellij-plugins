@@ -14,7 +14,7 @@ class ToolWindowFactory : ToolWindowFactory {
      */
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val component = ToolWindowComponent(project)
-        val contentFactory = ContentFactory.SERVICE.getInstance()
+        val contentFactory = ContentFactory.getInstance()
         val content = contentFactory.createContent(component, "", false)
         content.setDisposer(component)
         toolWindow.contentManager.addContent(content)
